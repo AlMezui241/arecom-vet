@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Connexion - Gestion VET{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-md-5">
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
+                        <i class="bi bi-shield-lock-fill text-primary fs-1"></i>
+                    </div>
+                    <h2 class="fw-bold">Connexion</h2>
+                    <p class="text-muted small">Veuillez vous authentifier pour accéder à la plateforme</p>
+                </div>
+
+                {% if form.errors %}
+                <div class="alert alert-danger alert-dismissible fade show border-0 small" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Identifiant ou mot de passe incorrect.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label small fw-bold text-uppercase">Nom d'utilisateur</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-person text-muted"></i></span>
+                            {% render_field form.username class+="form-control border-start-0 ps-0" placeholder="Nom d utilisateur" %}
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="{{ form.password.id_for_label }}" class="form-label small fw-bold text-uppercase">Mot de passe</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-key text-muted"></i></span>
+                            {% render_field form.password class+="form-control border-start-0 ps-0" placeholder="Entrez votre mot de passe" %}
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary py-2 fw-bold shadow-sm">
+                            Se connecter <i class="bi bi-box-arrow-in-right ms-2"></i>
+                        </button>
+                    </div>
+                    <input type="hidden" name="next" value="{{ next }}">
+                </form>
+            </div>
+            <div class="card-footer bg-light border-0 py-3 text-center">
+                <p class="mb-0 small text-muted">Besoin d'aide ? Contactez l'administrateur système.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

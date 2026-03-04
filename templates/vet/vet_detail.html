@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Détails VET · {{ vet.identification_de_l_exploitant_ou_raison_sociale }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800 fw-bold">{{ vet.identification_de_l_exploitant_ou_raison_sociale }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Tableau de bord</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'vet:vet_list' %}" class="text-decoration-none">Établissements</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Détails</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'vet:vet_pdf' vet.pk %}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Générer Reçu
+            </a>
+            <a href="{% url 'vet:vet_excel_detail' vet.pk %}" class="btn btn-success shadow-sm">
+                <i class="bi bi-file-earmark-excel me-1"></i> Excel
+            </a>
+            <a href="{% url 'vet:vet_update' vet.pk %}" class="btn btn-warning shadow-sm">
+                <i class="bi bi-pencil-square me-1"></i> Modifier
+            </a>
+            <a href="{% url 'vet:vet_delete' vet.pk %}" class="btn btn-danger shadow-sm">
+                <i class="bi bi-trash me-1"></i> Supprimer
+            </a>
+            <a href="{% url 'vet:vet_list' %}" class="btn btn-outline-secondary shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Info Column -->
+        <div class="col-lg-8">
+            <!-- Identity Card -->
+            <div class="card shadow-sm border-0 mb-4 h-100">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="card-title mb-0 fw-bold text-primary"><i class="bi bi-info-circle me-2"></i>Informations Générales</h5>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="small text-muted text-uppercase fw-bold">Identification</label>
+                            <p class="fs-5 fw-medium text-dark mb-0">{{ vet.identification_de_l_exploitant_ou_raison_sociale }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small text-muted text-uppercase fw-bold">Numéro Ordre de Recette</label>
+                            <p class="fs-5 fw-medium text-dark mb-0">{{ vet.numero_ordre_de_recette }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small text-muted text-uppercase fw-bold">Statut</label>
+                            <div>
+                                {% if vet.statut == "actif" %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Actif
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 py-2">
+                                        <i class="bi bi-slash-circle me-1"></i> Inactif
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small text-muted text-uppercase fw-bold">Dossier suivi par</label>
+                            <p class="fs-5 fw-medium text-dark mb-0">
+                                {% if vet.dossier_suivi_par %}
+                                    <i class="bi bi-person-check me-1 text-primary"></i> {{ vet.dossier_suivi_par }}
+                                {% else %}
+                                    <span class="text-muted fst-italic">Non assigné</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Info Column -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 mb-4 bg-gradient-primary text-white h-100 position-relative overflow-hidden">
+                <!-- Decoration circle -->
+                <div class="position-absolute top-0 end-0 translate-middle rounded-circle bg-white opacity-10" style="width: 150px; height: 150px;"></div>
+                
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <h5 class="card-title text-white-50 text-uppercase fw-bold mb-4"><i class="bi bi-cash-stack me-2"></i>Situation Financière</h5>
+                    
+                    <div class="mb-4">
+                        <label class="small text-white-50 text-uppercase fw-bold d-block">Montant Annuel</label>
+                        <span class="display-6 fw-bold">{{ vet.montant_de_la_redevance_annuelle }}</span>
+                        <span class="fs-5 opacity-75">FCFA</span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="small text-white-50 text-uppercase fw-bold d-block mb-2">Vignettes</label>
+                        <div class="d-flex flex-column gap-2">
+                            {% for vv in vet.vignettes_assignees.all %}
+                            <div class="d-flex justify-content-between align-items-center border-bottom border-white border-opacity-25 pb-1 small">
+                                <span>{{ vv.categorie }}</span>
+                                <span class="fw-bold">x {{ vv.quantite }}</span>
+                            </div>
+                            {% empty %}
+                            <span class="text-white-50 small fst-italic">Aucune vignette</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="small text-white-50 text-uppercase fw-bold d-block">Total à Recouvrer</label>
+                        <span class="fs-3 fw-bold">{{ vet.montant_total_a_recouvrer }}</span>
+                        <span class="fs-6 opacity-75">FCFA</span>
+                    </div>
+
+                    <div class="mt-auto d-flex flex-column gap-2">
+                        {% if vet.frais_de_dossier_payes %}
+                            <div class="d-flex align-items-center p-2 rounded bg-success bg-opacity-25 border border-success border-opacity-25">
+                                <i class="bi bi-check-circle-fill text-white me-2 fs-4"></i>
+                                <div>
+                                    <span class="d-block fw-bold">Frais de dossier réglés</span>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="d-flex align-items-center p-2 rounded bg-danger bg-opacity-25 border border-danger border-opacity-25">
+                                <i class="bi bi-exclamation-circle-fill text-white me-2 fs-4"></i>
+                                <div>
+                                    <span class="d-block fw-bold">Frais de dossier non réglés</span>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if vet.redevance_payee %}
+                            <div class="d-flex align-items-center p-2 rounded bg-success bg-opacity-25 border border-success border-opacity-25">
+                                <i class="bi bi-check-circle-fill text-white me-2 fs-4"></i>
+                                <div>
+                                    <span class="d-block fw-bold small">Redevance annuelle payée</span>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="d-flex align-items-center p-2 rounded bg-warning bg-opacity-25 border border-warning border-opacity-25">
+                                <i class="bi bi-clock-history text-white me-2 fs-4"></i>
+                                <div>
+                                    <span class="d-block fw-bold small">Redevance en attente</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <!-- Location Column -->
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="card-title mb-0 fw-bold text-primary"><i class="bi bi-geo-alt me-2"></i>Localisation & Contact</h5>
+                </div>
+                <div class="card-body pt-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0 border-bottom-0 d-flex justify-content-between align-items-start py-3">
+                            <div>
+                                <span class="d-block small text-muted text-uppercase fw-bold mb-1">Zone Géographique</span>
+                                <div class="fw-medium">{{ vet.region }} <i class="bi bi-chevron-right small text-muted mx-1"></i> {{ vet.zone }}</div>
+                                <div class="text-muted small mt-1">{{ vet.quartier }}</div>
+                            </div>
+                            <span class="badge bg-light text-primary rounded-pill"><i class="bi bi-map"></i></span>
+                        </li>
+                        <li class="list-group-item px-0 border-bottom-0 d-flex justify-content-between align-items-center py-3 border-top">
+                            <div>
+                                <span class="d-block small text-muted text-uppercase fw-bold mb-1">Coordonnées GPS</span>
+                                <div class="font-monospace text-secondary">
+                                    {% if vet.latitude and vet.longitude %}
+                                        {{ vet.latitude }}, {{ vet.longitude }}
+                                    {% else %}
+                                        <span class="text-muted fst-italic">Non renseignées</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <a href="https://www.google.com/maps/search/?api=1&query={{ vet.latitude }},{{ vet.longitude }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-circle {% if not vet.latitude %}disabled{% endif %}">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                        </li>
+                        <li class="list-group-item px-0 border-bottom-0 d-flex justify-content-between align-items-center py-3 border-top">
+                            <div>
+                                <span class="d-block small text-muted text-uppercase fw-bold mb-1">Contact</span>
+                                <div class="mb-1"><i class="bi bi-telephone me-2 text-muted"></i>{{ vet.numero_de_telephone|default:"—" }}</div>
+                                <div><i class="bi bi-envelope me-2 text-muted"></i>{{ vet.email|default:"—" }}</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dates & Notes Column -->
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="card-title mb-0 fw-bold text-primary"><i class="bi bi-calendar-event me-2"></i>Périodes & Notes</h5>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <div class="p-3 rounded bg-light border border-light">
+                                <label class="small text-muted text-uppercase fw-bold d-block mb-1">Émission</label>
+                                <span class="fw-bold text-dark">{{ vet.date_d_emission_de_la_redevance_annuelle|date:"d M Y"|default:"—" }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded bg-light border border-light">
+                                <label class="small text-muted text-uppercase fw-bold d-block mb-1">Expiration</label>
+                                <span class="fw-bold {% if vet.date_d_expiration_de_la_redevance_annuelle < today %}text-danger{% else %}text-dark{% endif %}">
+                                    {{ vet.date_d_expiration_de_la_redevance_annuelle|date:"d M Y"|default:"—" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="small text-muted text-uppercase fw-bold d-block mb-2">Notes & Observations</label>
+                        <div class="p-3 rounded bg-light text-secondary border border-light" style="min-height: 100px;">
+                            {{ vet.notes|linebreaks|default:"Aucune note enregistrée pour cet établissement." }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Log Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="card-title mb-0 fw-bold text-muted"><i class="bi bi-journal-text me-2"></i>Historique des Modifications</h5>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr class="small text-muted text-uppercase">
+                                    <th>Date</th>
+                                    <th>Utilisateur</th>
+                                    <th>Action</th>
+                                    <th>Détails</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in audit_logs %}
+                                <tr>
+                                    <td class="small">{{ log.timestamp|date:"d/m/Y H:i" }}</td>
+                                    <td class="small fw-bold">{{ log.user.get_full_name|default:log.user.username }}</td>
+                                    <td>
+                                        {% if log.action == 'create' %}
+                                            <span class="badge bg-success small">Création</span>
+                                        {% elif log.action == 'update' %}
+                                            <span class="badge bg-info small">Modification</span>
+                                        {% else %}
+                                            <span class="badge bg-danger small">Suppression</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small text-muted">{{ log.details }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted small py-3">Aucun historique disponible.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

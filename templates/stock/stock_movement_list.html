@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Journal des Mouvements de Stock{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800 fw-bold">Journal des Mouvements</h1>
+            <p class="text-muted mb-0">Historique complet des entrées et sorties de vignettes.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'stock:status' %}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-1"></i> État des Stocks
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Date</th>
+                            <th>Type</th>
+                            <th>Vignette</th>
+                            <th>Quantité</th>
+                            <th>Référence / Commentaire</th>
+                            <th>Utilisateur</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for move in movements %}
+                        <tr>
+                            <td class="ps-4 small">{{ move.date_mouvement|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if move.type_mouvement == 'entree' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2">
+                                        <i class="bi bi-arrow-down-left me-1"></i> Entrée
+                                    </span>
+                                {% elif move.type_mouvement == 'sortie' %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2">
+                                        <i class="bi bi-arrow-up-right me-1"></i> Sortie
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2">
+                                        <i class="bi bi-gear me-1"></i> Ajustement
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fw-bold text-primary">Niveau {{ move.category.niveau }}</span>
+                                <div class="small text-muted">{{ move.category.prix }} F</div>
+                            </td>
+                            <td>
+                                <span class="fw-bold fs-5 {% if move.type_mouvement == 'entree' %}text-success{% else %}text-danger{% endif %}">
+                                    {% if move.type_mouvement == 'entree' %}+{% else %}-{% endif %}{{ move.quantite }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if move.vet_reference %}
+                                    <a href="{% url 'vet:vet_detail' move.vet_reference.pk %}" class="text-decoration-none">
+                                        <i class="bi bi-building me-1"></i> {{ move.vet_reference.identification_de_l_exploitant_ou_raison_sociale|truncatechars:30 }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted small">{{ move.commentaire|default:"—" }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="small">
+                                <i class="bi bi-person me-1"></i> {{ move.utilisateur.get_full_name|default:move.utilisateur.username }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                Aucun mouvement enregistré pour le moment.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if is_paginated %}
+        <div class="card-footer bg-white border-0 py-3">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a></li>
+                    {% endif %}
+                    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} sur {{ paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Approvisionnement de Stock{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1 text-gray-800 fw-bold">Nouvel Approvisionnement</h1>
+                    <p class="text-muted mb-0">Enregistrez une entrée de vignettes dans le stock.</p>
+                </div>
+                <a href="{% url 'stock:status' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg me-1"></i> Annuler
+                </a>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger mb-4 d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div>{{ form.non_field_errors }}</div>
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-4">
+                            <label for="{{ form.category.id_for_label }}" class="form-label fw-bold">Catégorie de Vignette <span class="text-danger">*</span></label>
+                            {% render_field form.category class+="form-select form-select-lg" %}
+                            <div class="invalid-feedback">{{ form.category.errors|first }}</div>
+                            <div class="form-text">Sélectionnez le niveau de prix de la vignette.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.quantite.id_for_label }}" class="form-label fw-bold">Quantité à ajouter <span class="text-danger">*</span></label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text"><i class="bi bi-plus-circle"></i></span>
+                                {% render_field form.quantite class+="form-control" placeholder="ex: 100" %}
+                            </div>
+                            <div class="invalid-feedback">{{ form.quantite.errors|first }}</div>
+                            <div class="form-text">Le stock actuel sera augmenté de ce montant.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.commentaire.id_for_label }}" class="form-label fw-bold">Commentaires / Notes</label>
+                            {% render_field form.commentaire class+="form-control" rows="3" %}
+                            <div class="invalid-feedback">{{ form.commentaire.errors|first }}</div>
+                            <div class="form-text">Précisez l'origine de cet approvisionnement (ex: numéro de bon de livraison).</div>
+                        </div>
+
+                        <div class="d-grid pt-3 border-top">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm">
+                                <i class="bi bi-check-lg me-1"></i> Valider l'Approvisionnement
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

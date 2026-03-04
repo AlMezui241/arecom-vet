@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmation de suppression{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0 rounded-3">
+                <div class="card-header bg-danger text-white py-3 rounded-top-3">
+                    <h5 class="card-title mb-0 fw-bold text-center">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Suppression définitive
+                    </h5>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <div class="mb-4 text-danger opacity-25">
+                        <i class="bi bi-trash3" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-3">Êtes-vous sûr ?</h5>
+                    
+                    <p class="text-secondary mb-4">
+                        Vous êtes sur le point de supprimer définitivement l'établissement :<br>
+                        <span class="d-block mt-2 fw-bold text-dark p-2 bg-light rounded">{{ object.identification_de_l_exploitant_ou_raison_sociale }}</span>
+                        <span class="d-block small text-muted mt-1">N° {{ object.numero_ordre_de_recette }}</span>
+                    </p>
+                    
+                    <div class="alert alert-warning small border-0 bg-warning bg-opacity-10 text-warning-emphasis">
+                        <i class="bi bi-info-circle me-1"></i> Cette action est irréversible.
+                    </div>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                            <a href="{% url 'vet:vet_detail' object.pk %}" class="btn btn-light border px-4">Annuler</a>
+                            <button type="submit" class="btn btn-danger px-4 fw-bold">
+                                <i class="bi bi-trash me-1"></i> Confirmer la suppression
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

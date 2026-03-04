@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord · Gestion VET{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+  <div class="col-md-6">
+    <h1 class="display-6 fw-bold text-dark mb-1">Tableau de bord</h1>
+    <p class="text-muted">Aperçu global de la gestion des redevances VET</p>
+  </div>
+  <div class="col-md-6 text-md-end">
+    <form class="d-flex flex-wrap justify-content-md-end gap-2" method="get">
+      <select name="period" class="form-select form-select-sm" style="width: 140px;" onchange="this.form.submit()">
+        <option value="all" {% if current_period == 'all' %}selected{% endif %}>Périodes</option>
+        <option value="month" {% if current_period == 'month' %}selected{% endif %}>Ce mois-ci</option>
+        <option value="year" {% if current_period == 'year' %}selected{% endif %}>Cette année</option>
+      </select>
+      <select name="region" class="form-select form-select-sm" style="width: 140px;" onchange="this.form.submit()">
+        <option value="">Régions</option>
+        {% for reg in regions %}
+        <option value="{{ reg }}" {% if current_region == reg %}selected{% endif %}>{{ reg }}</option>
+        {% endfor %}
+      </select>
+      <div class="btn-group shadow-sm ms-2">
+        <a href="{% url 'vet:vet_create' %}" class="btn btn-sm btn-primary">
+          <i class="bi bi-plus-lg me-1"></i> Nouveau
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Alertes de stock bas -->
+{% if low_stock_alerts %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="alert alert-warning shadow-sm border-start border-4 border-warning mb-0 d-flex justify-content-between align-items-center p-3">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+        <div>
+          <h6 class="alert-heading fw-bold mb-1">Alerte Stock : Certaines vignettes sont presque épuisées !</h6>
+          <p class="mb-0 small">Niveaux concernés : 
+            {% for cat in low_stock_alerts %}
+            <span class="badge bg-warning text-dark me-1">Niveau {{ cat.niveau }} ({{ cat.stock_actuel }} restants)</span>
+            {% endfor %}
+          </p>
+        </div>
+      </div>
+      <a href="{% url 'stock:status' %}" class="btn btn-sm btn-warning fw-bold px-3">
+        <i class="bi bi-box-seam me-1"></i> Gérer le Stock
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- KPI Cards Principal -->
+<div class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="card stat-card bg-white border-0 shadow-sm h-100 border-start border-4 border-primary">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <p class="text-muted text-uppercase fw-bold small mb-0">Total à Recouvrer</p>
+          <i class="bi bi-cash-stack fs-4 text-primary opacity-50"></i>
+        </div>
+        <h3 class="fw-bold">{{ total_a_recouvrer }} <small class="fs-6 text-muted">FCFA</small></h3>
+        <p class="text-muted small mb-0">Montant total attendu</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card bg-white border-0 shadow-sm h-100 border-start border-4 border-success">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <p class="text-muted text-uppercase fw-bold small mb-0">Taux Recouvrement</p>
+          <i class="bi bi-graph-up-arrow fs-4 text-success opacity-50"></i>
+        </div>
+        <h3 class="fw-bold text-success">{{ taux_recouvrement }}%</h3>
+        <div class="progress mt-2" style="height: 6px;">
+          <div class="progress-bar bg-success" role="progressbar" style="width: {{ taux_recouvrement }}%" aria-valuenow="{{ taux_recouvrement }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card bg-white border-0 shadow-sm h-100 border-start border-4 border-warning">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <p class="text-muted text-uppercase fw-bold small mb-0">En Retard</p>
+          <i class="bi bi-clock-history fs-4 text-warning opacity-50"></i>
+        </div>
+        <h3 class="fw-bold text-warning">{{ en_retard }}</h3>
+        <p class="text-muted small mb-0">Paiements hors délais</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card bg-white border-0 shadow-sm h-100 border-start border-4 border-info">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <p class="text-muted text-uppercase fw-bold small mb-0">Actifs / Total</p>
+          <i class="bi bi-building fs-4 text-info opacity-50"></i>
+        </div>
+        <h3 class="fw-bold text-info">{{ actifs }} <small class="fs-6 text-muted">/ {{ total_vet }}</small></h3>
+        <p class="text-muted small mb-0">Établissements en règle</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Graphiques et Performance -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2 text-primary"></i>Performance Mensuelle (Total à Recouvrer)</h5>
+      </div>
+      <div class="card-body">
+        <canvas id="monthChart" height="280"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-success"></i>Répartition des Établissements</h5>
+      </div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <div style="width: 80%;">
+          <canvas id="statutChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-12">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Performance par Région</h5>
+      </div>
+      <div class="card-body">
+        <canvas id="regionChart" height="250"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-5">
+  <!-- Top Régions Table -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-list-task me-2 text-primary"></i>Classement des Régions</h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-4">Région</th>
+                <th class="text-center">Établissements</th>
+                <th class="text-end pe-4">Total à Recouvrer (FCFA)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for stat in stats_region %}
+              <tr>
+                <td class="ps-4 fw-medium">{{ stat.region }}</td>
+                <td class="text-center">{{ stat.count }}</td>
+                <td class="text-end pe-4 fw-bold text-primary">{{ stat.total }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="text-center py-4 text-muted small">Aucune donnée disponible</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions & Exports -->
+  <div class="col-lg-4">
+    {% if user.is_superuser %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-cloud-arrow-down me-2 text-primary"></i>Rapports & Exports</h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small">Exportez les données filtrées ({{ current_period }} / {{ current_region|default:"Toutes régions" }})</p>
+        <div class="d-grid gap-2">
+          <a href="{% url 'vet:vet_export_excel' %}?period={{ current_period }}&region={{ current_region|default:'' }}" class="btn btn-success text-start d-flex align-items-center justify-content-between shadow-sm">
+            <span>
+              <i class="bi bi-file-earmark-excel me-2"></i>
+              <strong>Exporter en Excel (.xlsx)</strong>
+            </span>
+            <i class="bi bi-download"></i>
+          </a>
+          <a href="{% url 'vet:vet_export_pdf' %}?period={{ current_period }}&region={{ current_region|default:'' }}" class="btn btn-outline-danger text-start d-flex align-items-center justify-content-between shadow-sm">
+            <span>
+              <i class="bi bi-file-earmark-pdf me-2"></i>
+              <strong>Exporter en PDF</strong>
+            </span>
+            <i class="bi bi-download"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card border-0 shadow-sm h-auto">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-lightning-charge me-2 text-warning"></i>Accès Rapide</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-3">
+          <a href="{% url 'vet:vet_list' %}" class="btn btn-outline-dark text-start p-3 d-flex align-items-center justify-content-between shadow-sm">
+            <span>
+              <i class="bi bi-table me-2 fs-5 text-primary"></i>
+              <strong>Consulter le registre</strong>
+            </span>
+            <i class="bi bi-chevron-right small opacity-50"></i>
+          </a>
+          <a href="{% url 'vet:vet_map' %}" class="btn btn-outline-dark text-start p-3 d-flex align-items-center justify-content-between shadow-sm">
+            <span>
+              <i class="bi bi-geo-alt me-2 fs-5 text-success"></i>
+              <strong>Carte interactive</strong>
+            </span>
+            <i class="bi bi-chevron-right small opacity-50"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Données pour le graphique mensuel (Total à Recouvrer)
+    const monthLabels = [{% for stat in stats_month %}'{{ stat.month|date:"M Y" }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const monthData = [{% for stat in stats_month %}{{ stat.total }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+    const ctxMonth = document.getElementById('monthChart').getContext('2d');
+    new Chart(ctxMonth, {
+        type: 'line',
+        data: {
+            labels: monthLabels,
+            datasets: [{
+                label: 'Total à Recouvrer (FCFA)',
+                data: monthData,
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                borderColor: 'rgba(13, 110, 253, 1)',
+                borderWidth: 3,
+                tension: 0.3,
+                fill: true,
+                pointBackgroundColor: 'rgba(13, 110, 253, 1)',
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' F';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Total : ' + context.raw.toLocaleString() + ' FCFA';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Données pour le graphique par région
+    const regionLabels = [{% for stat in stats_region %}'{{ stat.region }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const regionData = [{% for stat in stats_region %}{{ stat.total }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+    const ctxRegion = document.getElementById('regionChart').getContext('2d');
+    new Chart(ctxRegion, {
+        type: 'bar',
+        data: {
+            labels: regionLabels,
+            datasets: [{
+                label: 'Total à Recouvrer (FCFA)',
+                data: regionData,
+                backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                borderColor: 'rgba(13, 110, 253, 1)',
+                borderWidth: 1,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' F';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Données pour le graphique de statut
+    const ctxStatut = document.getElementById('statutChart').getContext('2d');
+    new Chart(ctxStatut, {
+        type: 'doughnut',
+        data: {
+            labels: ['Actifs', 'Inactifs'],
+            datasets: [{
+                data: [{{ actifs }}, {{ inactifs }}],
+                backgroundColor: ['#198754', '#6c757d'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            },
+            cutout: '70%'
+        }
+    });
+});
+</script>
+{% endblock %}

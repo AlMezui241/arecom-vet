@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}
+    {% if form.instance.pk %}Modifier VET{% else %}Nouveau VET{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('btn-locate').addEventListener('click', function() {
+        if ("geolocation" in navigator) {
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+            this.disabled = true;
+            
+            navigator.geolocation.getCurrentPosition((position) => {
+                document.getElementById('{{ form.latitude.id_for_label }}').value = position.coords.latitude.toFixed(6);
+                document.getElementById('{{ form.longitude.id_for_label }}').value = position.coords.longitude.toFixed(6);
+                this.innerHTML = '<i class="bi bi-check-lg"></i>';
+                this.classList.replace('btn-outline-primary', 'btn-success');
+                this.disabled = false;
+            }, (error) => {
+                alert("Erreur de géolocalisation: " + error.message);
+                this.innerHTML = '<i class="bi bi-geo-alt"></i>';
+                this.disabled = false;
+            });
+        } else {
+            alert("La géolocalisation n'est pas supportée par votre navigateur.");
+        }
+    });
+
+    // Gestion dynamique du formset des vignettes
+    document.getElementById('add-vignette').addEventListener('click', function() {
+        const formsetContainer = document.getElementById('vignettes-formset');
+        const totalForms = document.getElementById('id_vignettes_assignees-TOTAL_FORMS');
+        const currentCount = parseInt(totalForms.value);
+        
+        // Cloner la première ligne
+        const newRow = formsetContainer.querySelector('.vignette-row').cloneNode(true);
+        
+        // Mettre à jour les indices dans les noms et IDs
+        const regex = /vignettes_assignees-(\d+)-/g;
+        newRow.innerHTML = newRow.innerHTML.replace(regex, `vignettes_assignees-${currentCount}-`);
+        
+        // Réinitialiser les valeurs
+        newRow.querySelectorAll('select, input').forEach(input => {
+            if (input.type !== 'hidden') {
+                input.value = '';
+                if (input.type === 'checkbox') input.checked = false;
+            }
+        });
+
+        // Supprimer les erreurs éventuelles du clone
+        newRow.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+        newRow.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+        formsetContainer.appendChild(newRow);
+        totalForms.value = currentCount + 1;
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1 text-gray-800 fw-bold">
+                        {% if form.instance.pk %}
+                            Modification de l'établissement
+                        {% else %}
+                            Nouvel établissement
+                        {% endif %}
+                    </h1>
+                    <p class="text-muted mb-0">Remplissez les informations ci-dessous pour {% if form.instance.pk %}mettre à jour{% else %}créer{% endif %} l'établissement.</p>
+                </div>
+                <a href="{% url 'vet:vet_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg me-1"></i> Annuler
+                </a>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger mb-4 d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div>{{ form.non_field_errors }}</div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Section: Identification -->
+                        <div class="mb-5">
+                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="bi bi-building me-2"></i>Identification</h5>
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label for="{{ form.identification_de_l_exploitant_ou_raison_sociale.id_for_label }}" class="form-label fw-medium">Raison Sociale / Exploitant <span class="text-danger">*</span></label>
+                                    {% render_field form.identification_de_l_exploitant_ou_raison_sociale class+="form-control form-control-lg" placeholder="Nom de l’établissement" %}
+                                    <div class="invalid-feedback">{{ form.identification_de_l_exploitant_ou_raison_sociale.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.numero_ordre_de_recette.id_for_label }}" class="form-label fw-medium">N° Ordre de Recette</label>
+                                    {% render_field form.numero_ordre_de_recette class+="form-control" placeholder="ex: OR-2024-001" %}
+                                    <div class="invalid-feedback">{{ form.numero_ordre_de_recette.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.statut.id_for_label }}" class="form-label fw-medium">Statut</label>
+                                    {% render_field form.statut class+="form-select" %}
+                                    <div class="invalid-feedback">{{ form.statut.errors|first }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section: Localisation & Contact -->
+                        <div class="mb-5">
+                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="bi bi-geo-alt me-2"></i>Localisation & Contact</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="{{ form.region.id_for_label }}" class="form-label fw-medium">Région</label>
+                                    {% render_field form.region class+="form-control" placeholder="ex: Littoral" %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form.zone.id_for_label }}" class="form-label fw-medium">Zone</label>
+                                    {% render_field form.zone class+="form-control" placeholder="ex: Zone A" %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form.quartier.id_for_label }}" class="form-label fw-medium">Quartier</label>
+                                    {% render_field form.quartier class+="form-control" placeholder="ex: Akwa" %}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="{{ form.latitude.id_for_label }}" class="form-label fw-medium">Latitude</label>
+                                    <div class="input-group">
+                                        {% render_field form.latitude class+="form-control" placeholder="ex: 4.0511" %}
+                                        <button type="button" class="btn btn-outline-primary" id="btn-locate" title="Me localiser"><i class="bi bi-geo-alt"></i></button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.longitude.id_for_label }}" class="form-label fw-medium">Longitude</label>
+                                    {% render_field form.longitude class+="form-control" placeholder="ex: 9.7679" %}
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="{{ form.numero_de_telephone.id_for_label }}" class="form-label fw-medium">Téléphone</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                        {% render_field form.numero_de_telephone class+="form-control" placeholder="ex: +241 699000000" pattern="^\+?[0-9\s\-\(\)]{7,20}$" title="Veuillez entrer un numéro de téléphone valide (7 à 20 chiffres, peut inclure +, -, parenthèses et espaces)" %}
+                                    </div>
+                                    <div class="invalid-feedback">{{ form.numero_de_telephone.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label fw-medium">Email</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                        {% render_field form.email class+="form-control" type="email" placeholder="ex: contact@exemple.com" %}
+                                    </div>
+                                    <div class="invalid-feedback">{{ form.email.errors|first }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section: Suivi Administratif -->
+                        <div class="mb-5">
+                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="bi bi-person-badge me-2"></i>Suivi Administratif</h5>
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label for="{{ form.dossier_suivi_par.id_for_label }}" class="form-label fw-medium">Dossier suivi par (Agent Contrôleur)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-person-check"></i></span>
+                                        {% render_field form.dossier_suivi_par class+="form-control" placeholder="Nom de l’agent en charge" %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section: Informations Financières -->
+                        <div class="mb-5">
+                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="bi bi-cash-coin me-2"></i>Informations Financières</h5>
+                            <div class="row g-3">
+                                <!-- Vignettes Section (Dynamique) -->
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-muted small text-uppercase mb-2">Vignettes Assignées</label>
+                                    <div class="card bg-light border-0 p-3">
+                                        {{ vignettes.management_form }}
+                                        <div id="vignettes-formset">
+                                            {% for v_form in vignettes %}
+                                            <div class="row g-2 mb-2 vignette-row border-bottom pb-2">
+                                                {% for hidden in v_form.hidden_fields %}
+                                                    {{ hidden }}
+                                                {% endfor %}
+                                                <div class="col-md-7">
+                                                    <label class="small fw-bold">Catégorie</label>
+                                                    {% render_field v_form.categorie class+="form-select form-select-sm" %}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="small fw-bold">Quantité</label>
+                                                    {% render_field v_form.quantite class+="form-control form-control-sm" min="0" %}
+                                                </div>
+                                                <div class="col-md-2 d-flex align-items-end">
+                                                    {% if vignettes.can_delete %}
+                                                        <div class="form-check mb-1">
+                                                            {% render_field v_form.DELETE class+="form-check-input" %}
+                                                            <label class="form-check-label small text-danger">Suppr.</label>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="mt-2">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="add-vignette">
+                                                <i class="bi bi-plus-circle me-1"></i> Ajouter une vignette
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="{{ form.montant_de_la_redevance_annuelle.id_for_label }}" class="form-label fw-medium">Montant Annuel (FCFA)</label>
+                                    {% render_field form.montant_de_la_redevance_annuelle class+="form-control" %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium">Total à Recouvrer (Calculé)</label>
+                                    <div class="form-control bg-light fw-bold text-primary">
+                                        {{ form.instance.montant_total_a_recouvrer|default:"0" }} FCFA
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch p-3 bg-light rounded border h-100">
+                                        {% render_field form.frais_de_dossier_payes class+="form-check-input ms-0 me-3" role="switch" %}
+                                        <label class="form-check-label fw-medium" for="{{ form.frais_de_dossier_payes.id_for_label }}">
+                                            Frais de dossier payés
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch p-3 bg-light rounded border h-100">
+                                        {% render_field form.redevance_payee class+="form-check-input ms-0 me-3" role="switch" %}
+                                        <label class="form-check-label fw-medium" for="{{ form.redevance_payee.id_for_label }}">
+                                            Redevance annuelle payée
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section: Dates & Notes -->
+                        <div class="mb-4">
+                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="bi bi-calendar3 me-2"></i>Dates & Notes</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.date_d_emission_de_la_redevance_annuelle.id_for_label }}" class="form-label fw-medium">Date d'émission</label>
+                                    {% render_field form.date_d_emission_de_la_redevance_annuelle class+="form-control" type="date" %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.date_d_expiration_de_la_redevance_annuelle.id_for_label }}" class="form-label fw-medium">Date d'expiration</label>
+                                    {% render_field form.date_d_expiration_de_la_redevance_annuelle class+="form-control" type="date" %}
+                                </div>
+                                <div class="col-12">
+                                    <label for="{{ form.notes.id_for_label }}" class="form-label fw-medium">Notes & Observations</label>
+                                    {% render_field form.notes class+="form-control" rows="4" placeholder="Ajoutez des notes supplémentaires ici..." %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <a href="{% url 'vet:vet_list' %}" class="btn btn-light border">Annuler</a>
+                            <button type="submit" class="btn btn-primary px-4 fw-bold">
+                                <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

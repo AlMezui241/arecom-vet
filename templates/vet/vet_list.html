@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}VET · Liste{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1 fw-bold">Registre des Établissements</h2>
+    <p class="text-muted mb-0">Gestion et suivi des redevances VET</p>
+  </div>
+  <div class="btn-group shadow-sm">
+    <a href="{% url 'vet:vet_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nouveau</a>
+    <a href="{% url 'vet:vet_map' %}" class="btn btn-outline-primary"><i class="bi bi-geo-alt me-1"></i> Carte</a>
+    <div class="btn-group">
+      <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-download me-1"></i> Exporter
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{% url 'vet:vet_export_excel' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel (.xlsx)</a></li>
+        <li><a class="dropdown-item" href="{% url 'vet:vet_export_pdf' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{% url 'vet:vet_export_csv' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-text me-2 text-muted"></i>CSV (Format brut)</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body bg-light">
+    <form class="row g-3" method="get">
+      <!-- Recherche textuelle -->
+      <div class="col-md-4">
+        <label class="form-label small fw-bold text-uppercase">Recherche</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="search" name="q" class="form-control border-start-0 ps-0" placeholder="Raison sociale, N°, quartier..." value="{{ request.GET.q|default:'' }}">
+        </div>
+      </div>
+      
+      <!-- Filtre Région -->
+      <div class="col-md-2">
+        <label class="form-label small fw-bold text-uppercase">Région</label>
+        <select name="region" class="form-select" onchange="this.form.submit()">
+          <option value="">Toutes</option>
+          {% for reg in regions %}
+          <option value="{{ reg }}" {% if request.GET.region == reg %}selected{% endif %}>{{ reg }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Filtre Statut -->
+      <div class="col-md-2">
+        <label class="form-label small fw-bold text-uppercase">Statut</label>
+        <select name="statut" class="form-select" onchange="this.form.submit()">
+          <option value="">Tous</option>
+          <option value="actif" {% if request.GET.statut == "actif" %}selected{% endif %}>Actif</option>
+          <option value="inactif" {% if request.GET.statut == "inactif" %}selected{% endif %}>Inactif</option>
+        </select>
+      </div>
+
+      <!-- Filtre Frais -->
+      <div class="col-md-2">
+        <label class="form-label small fw-bold text-uppercase">Frais Dossier</label>
+        <select name="frais" class="form-select" onchange="this.form.submit()">
+          <option value="">Tous</option>
+          <option value="paye" {% if request.GET.frais == "paye" %}selected{% endif %}>Payés</option>
+          <option value="non_paye" {% if request.GET.frais == "non_paye" %}selected{% endif %}>Non payés</option>
+        </select>
+      </div>
+
+      <!-- Filtre Redevance -->
+      <div class="col-md-2">
+        <label class="form-label small fw-bold text-uppercase">Redevance</label>
+        <select name="redevance" class="form-select" onchange="this.form.submit()">
+          <option value="">Tous</option>
+          <option value="paye" {% if request.GET.redevance == "paye" %}selected{% endif %}>Payée</option>
+          <option value="non_paye" {% if request.GET.redevance == "non_paye" %}selected{% endif %}>Non payée</option>
+        </select>
+      </div>
+
+      <!-- Boutons -->
+      <div class="col-md-2 d-flex align-items-end">
+        <div class="btn-group w-100 shadow-sm">
+          <button class="btn btn-primary" type="submit">Filtrer</button>
+          {% if request.GET.q or request.GET.region or request.GET.statut or request.GET.frais or request.GET.redevance %}
+            <a class="btn btn-outline-secondary" href="{% url 'vet:vet_list' %}" title="Réinitialiser"><i class="bi bi-x-lg"></i></a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="bg-light">
+        <tr>
+          <th class="ps-4">Identification</th>
+          <th class="d-none d-lg-table-cell">Localisation</th>
+          <th class="d-none d-md-table-cell">Redevance</th>
+          <th class="d-none d-md-table-cell text-nowrap">Frais Dossier</th>
+          <th class="text-nowrap">Total dû</th>
+          <th class="d-none d-sm-table-cell">Statut</th>
+          <th class="d-none d-xl-table-cell">Suivi par</th>
+          <th class="text-end pe-4">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in vets %}
+        <tr>
+          <td class="ps-4">
+            <div class="d-flex align-items-center">
+              <div class="avatar-initial rounded-circle bg-light text-primary fw-bold d-flex justify-content-center align-items-center me-3 d-none d-sm-flex" style="width: 40px; height: 40px;">
+                {{ item.identification_de_l_exploitant_ou_raison_sociale|first|upper }}
+              </div>
+              <div>
+                <a href="{% url 'vet:vet_detail' item.pk %}" class="text-dark fw-bold text-decoration-none stretched-link-custom">{{ item.identification_de_l_exploitant_ou_raison_sociale }}</a>
+                <div class="small text-muted">N° {{ item.numero_ordre_de_recette }}</div>
+                <div class="d-lg-none small text-muted mt-1">
+                  <i class="bi bi-geo-alt me-1"></i>{{ item.region }} &bull; {{ item.zone }}
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="d-none d-lg-table-cell">
+            <div class="small fw-medium">{{ item.region }}</div>
+            <div class="small text-muted">{{ item.zone }} &bull; {{ item.quartier }}</div>
+          </td>
+          <td class="d-none d-md-table-cell text-nowrap text-muted">{{ item.montant_de_la_redevance_annuelle }} FCFA</td>
+          <td class="d-none d-md-table-cell text-nowrap">
+            {% if item.frais_de_dossier_payes %}
+              <span class="text-success small fw-bold"><i class="bi bi-check-circle me-1"></i>Payés</span>
+            {% else %}
+              <span class="text-danger small fw-bold"><i class="bi bi-x-circle me-1"></i>50 000 FCFA</span>
+            {% endif %}
+          </td>
+          <td class="text-nowrap fw-bold text-primary">{{ item.montant_total_a_recouvrer }} FCFA</td>
+          <td class="d-none d-sm-table-cell">
+            {% if item.statut == "actif" %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill"><i class="bi bi-check-circle-fill me-1"></i>Actif</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill"><i class="bi bi-pause-circle-fill me-1"></i>Inactif</span>
+            {% endif %}
+          </td>
+          <td class="d-none d-xl-table-cell">
+            {% if item.dossier_suivi_par %}
+              <div class="small text-dark fw-medium"><i class="bi bi-person-check text-muted me-1"></i>{{ item.dossier_suivi_par|truncatechars:20 }}</div>
+            {% else %}
+              <span class="small text-muted fst-italic">-</span>
+            {% endif %}
+          </td>
+          <td class="text-end pe-4">
+            <div class="btn-group">
+              <a class="btn btn-sm btn-light text-primary" href="{% url 'vet:vet_detail' item.pk %}" title="Voir"><i class="bi bi-eye"></i></a>
+              <a class="btn btn-sm btn-light text-warning" href="{% url 'vet:vet_update' item.pk %}" title="Éditer"><i class="bi bi-pencil"></i></a>
+              {% if user.is_superuser %}
+              <a class="btn btn-sm btn-light text-danger d-none d-sm-inline-block" href="{% url 'vet:vet_delete' item.pk %}" title="Supprimer"><i class="bi bi-trash"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5">
+            <div class="text-muted mb-3"><i class="bi bi-inbox fs-1"></i></div>
+            <p class="h5 text-muted">Aucun établissement trouvé</p>
+            {% if request.GET.q %}
+              <p class="small text-muted">Essayez de modifier vos termes de recherche</p>
+              <a href="{% url 'vet:vet_list' %}" class="btn btn-sm btn-outline-primary">Effacer la recherche</a>
+            {% else %}
+              <p class="small text-muted">Commencez par ajouter un nouvel établissement</p>
+              <a href="{% url 'vet:vet_create' %}" class="btn btn-primary btn-sm">Ajouter maintenant</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  {% if is_paginated %}
+  <div class="card-footer bg-white border-top-0 py-3">
+    <nav aria-label="Pagination">
+      <ul class="pagination justify-content-center mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link border-0 text-dark" href="?q={{ request.GET.q }}&region={{ request.GET.region }}&statut={{ request.GET.statut }}&frais={{ request.GET.frais }}&redevance={{ request.GET.redevance }}&page={{ page_obj.previous_page_number }}">
+            <i class="bi bi-chevron-left me-1"></i> Précédent
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link border-0 text-muted"><i class="bi bi-chevron-left me-1"></i> Précédent</span></li>
+        {% endif %}
+        
+        <li class="page-item disabled"><span class="page-link border-0 fw-bold text-primary">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}</span></li>
+        
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link border-0 text-dark" href="?q={{ request.GET.q }}&region={{ request.GET.region }}&statut={{ request.GET.statut }}&frais={{ request.GET.frais }}&redevance={{ request.GET.redevance }}&page={{ page_obj.next_page_number }}">
+            Suivant <i class="bi bi-chevron-right ms-1"></i>
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link border-0 text-muted">Suivant <i class="bi bi-chevron-right ms-1"></i></span></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

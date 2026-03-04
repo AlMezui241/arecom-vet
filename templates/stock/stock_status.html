@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Stock des Vignettes{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800 fw-bold">État des Stocks</h1>
+        <div class="d-flex gap-2">
+            <a href="{% url 'stock:stock_entry' %}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i> Nouvel Approvisionnement
+            </a>
+            <a href="{% url 'stock:movement_list' %}" class="btn btn-outline-secondary shadow-sm">
+                <i class="bi bi-journal-text me-1"></i> Journal des Mouvements
+            </a>
+        </div>
+    </div>
+
+    <!-- Alertes de stock bas -->
+    {% if low_stock_alerts %}
+    <div class="alert alert-warning shadow-sm border-start border-4 border-warning mb-4">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+            <div>
+                <h6 class="alert-heading fw-bold mb-1">Attention : Stock critique !</h6>
+                <p class="mb-0">Les catégories suivantes ont atteint ou dépassé le seuil d'alerte : 
+                    {% for cat in low_stock_alerts %}
+                    <strong>Niveau {{ cat.niveau }}</strong>{% if not forloop.last %}, {% endif %}
+                    {% endfor %}.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        {% for cat in categories %}
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100 {% if cat.stock_actuel <= cat.seuil_alerte %}border-start border-4 border-danger{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="badge bg-primary mb-2">Niveau {{ cat.niveau }}</span>
+                            <h5 class="card-title fw-bold mb-0">{{ cat.prix }} FCFA</h5>
+                        </div>
+                        <div class="text-muted">
+                            <i class="bi bi-tag-fill fs-3"></i>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small text-muted text-uppercase fw-bold d-block mb-1">Stock Actuel</label>
+                        <div class="d-flex align-items-center">
+                            <span class="display-6 fw-bold me-2 {% if cat.stock_actuel <= cat.seuil_alerte %}text-danger{% else %}text-success{% endif %}">
+                                {{ cat.stock_actuel }}
+                            </span>
+                            <span class="text-muted small">unités</span>
+                        </div>
+                    </div>
+                    <div class="progress mb-2" style="height: 6px;">
+                        {% with percent=cat.stock_actuel|add:0 %}
+                        <div class="progress-bar {% if cat.stock_actuel <= cat.seuil_alerte %}bg-danger{% else %}bg-success{% endif %}" 
+                             role="progressbar" 
+                             style="width: {% if cat.stock_actuel > 100 %}100{% else %}{{ cat.stock_actuel }}{% endif %}%">
+                        </div>
+                        {% endwith %}
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>Seuil d'alerte: {{ cat.seuil_alerte }}</span>
+                        <span>{{ cat.description }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

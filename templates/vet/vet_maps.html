@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% block title %}VET · Carte Professionnelle{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+  <style>
+    .main-container { height: calc(100vh - 120px); display: flex; flex-direction: column; }
+    .map-wrapper { display: flex; flex: 1; overflow: hidden; position: relative; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    #map { flex: 1; height: 100%; z-index: 1; }
+    
+    /* Panneau Latéral */
+    #side-panel { width: 350px; background: white; border-left: 1px solid #dee2e6; overflow-y: auto; transition: transform 0.3s ease; display: none; z-index: 2; }
+    #side-panel.active { display: block; }
+    
+    /* Barre de Filtres */
+    .filter-bar { background: white; padding: 10px 15px; border-bottom: 1px solid #dee2e6; z-index: 3; }
+    
+    /* Légende */
+    .legend { background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.2); line-height: 1.5; font-size: 12px; }
+    .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7; border-radius: 50%; }
+
+    /* Custom Icons */
+    .marker-pin { width: 30px; height: 30px; border-radius: 50% 50% 50% 0; background: #c30b82; position: absolute; transform: rotate(-45deg); left: 50%; top: 50%; margin: -15px 0 0 -15px; }
+    .marker-pin::after { content: ''; width: 24px; height: 24px; margin: 3px 0 0 3px; background: #fff; position: absolute; border-radius: 50%; }
+    
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+      .map-wrapper { flex-direction: column; }
+      #side-panel { width: 100%; height: 300px; border-left: none; border-top: 1px solid #dee2e6; }
+      .main-container { height: auto; min-height: 100vh; }
+      #map { height: 50vh; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <!-- Barre de Filtres supérieure -->
+    <div class="filter-bar shadow-sm mb-3 rounded">
+        <form id="map-filters" class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-alt text-muted"></i></span>
+                    <select name="region" class="form-select border-start-0" id="filter-region">
+                        <option value="">Toutes les régions</option>
+                        {% for reg in regions %}
+                        <option value="{{ reg }}">{{ reg }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-check-circle text-muted"></i></span>
+                    <select name="statut" class="form-select border-start-0" id="filter-statut">
+                        <option value="">Tous les statuts</option>
+                        <option value="actif">Actif</option>
+                        <option value="inactif">Inactif</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-cash-coin text-muted"></i></span>
+                    <select name="frais" class="form-select border-start-0" id="filter-frais">
+                        <option value="">Tous les paiements</option>
+                        <option value="paye">Frais payés</option>
+                        <option value="non_paye">Frais impayés</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3 text-end">
+                <span class="badge bg-primary rounded-pill" id="point-count">0 établissement(s)</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" id="reset-map"><i class="bi bi-arrow-counterclockwise"></i></button>
+            </div>
+        </form>
+    </div>
+
+    <div class="map-wrapper">
+        <!-- Carte Leaflet -->
+        <div id="map"></div>
+
+        <!-- Panneau Latéral Détails -->
+        <div id="side-panel" class="p-4 shadow">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0 fw-bold text-primary">Détails</h4>
+                <button type="button" class="btn-close" id="close-panel"></button>
+            </div>
+            <div id="panel-content">
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-geo fs-1 d-block mb-3"></i>
+                    Sélectionnez un établissement sur la carte pour voir les détails.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ vet_points|json_script:"vet-points-data" }}
+{% endblock %}
+
+{% block extra_js %}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const rawPoints = JSON.parse(document.getElementById('vet-points-data').textContent);
+        
+        // Configuration des couches de fond
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        });
+        
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EBP, and the GIS User Community'
+        });
+
+        const map = L.map('map', {
+            center: [0, 0],
+            zoom: 2,
+            layers: [osm]
+        });
+
+        const baseMaps = {
+            "Vue Rue": osm,
+            "Vue Satellite": satellite
+        };
+
+        L.control.layers(baseMaps).addTo(map);
+
+        // Légende
+        const legend = L.control({position: 'bottomright'});
+        legend.onAdd = function (map) {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML += '<h6>Conformité</h6>';
+            div.innerHTML += '<i style="background: #198754"></i> Frais payés<br>';
+            div.innerHTML += '<i style="background: #dc3545"></i> Frais impayés<br>';
+            return div;
+        };
+        legend.addTo(map);
+
+        // Groupe de clusters
+        let markerCluster = L.markerClusterGroup({
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true,
+            spiderfyOnMaxZoom: true
+        });
+        map.addLayer(markerCluster);
+
+        // Icônes personnalisées
+        function createIcon(color) {
+            return new L.Icon({
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+        }
+
+        const greenIcon = createIcon('green');
+        const redIcon = createIcon('red');
+
+        // Fonction de filtrage et rendu
+        function updateMap() {
+            markerCluster.clearLayers();
+            const filters = {
+                region: document.getElementById('filter-region').value,
+                statut: document.getElementById('filter-statut').value,
+                frais: document.getElementById('filter-frais').value
+            };
+
+            const filteredPoints = rawPoints.filter(p => {
+                if (filters.region && p.region !== filters.region) return false;
+                if (filters.statut && p.statut !== filters.statut) return false;
+                if (filters.frais === 'paye' && !p.frais_de_dossier_payes) return false;
+                if (filters.frais === 'non_paye' && p.frais_de_dossier_payes) return false;
+                return true;
+            });
+
+            document.getElementById('point-count').textContent = `${filteredPoints.length} établissement(s)`;
+
+            const markers = [];
+            filteredPoints.forEach(p => {
+                const icon = p.frais_de_dossier_payes ? greenIcon : redIcon;
+                const marker = L.marker([p.latitude, p.longitude], { icon: icon });
+                
+                // Popup simplifié
+                marker.bindPopup(`<strong>${p.identification_de_l_exploitant_ou_raison_sociale}</strong><br><small>${p.region} - ${p.zone}</small>`);
+                
+                // Événement clic pour le panneau latéral
+                marker.on('click', function() {
+                    showDetails(p);
+                });
+
+                markers.push(marker);
+            });
+
+            markerCluster.addLayers(markers);
+            if (markers.length > 0) {
+                map.fitBounds(markerCluster.getBounds().pad(0.1));
+            }
+        }
+
+        // Affichage des détails dans le panneau latéral
+        function showDetails(p) {
+            const panel = document.getElementById('side-panel');
+            const content = document.getElementById('panel-content');
+            panel.classList.add('active');
+
+            const badgeFrais = p.frais_de_dossier_payes 
+                ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Payés</span>' 
+                : '<span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>Impayés (50 000 F)</span>';
+            
+            const badgeStatut = p.statut === 'actif'
+                ? '<span class="badge bg-primary-subtle text-primary">Actif</span>'
+                : '<span class="badge bg-secondary-subtle text-secondary">Inactif</span>';
+
+            content.innerHTML = `
+                <div class="mb-4">
+                    <label class="small text-muted text-uppercase fw-bold d-block mb-1">Raison Sociale</label>
+                    <h5 class="fw-bold">${p.identification_de_l_exploitant_ou_raison_sociale}</h5>
+                    <div class="mt-2">${badgeStatut} ${badgeFrais}</div>
+                </div>
+                
+                <hr>
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <label class="small text-muted text-uppercase fw-bold d-block">N° Ordre de Recette</label>
+                        <span class="fw-medium">${p.numero_ordre_de_recette}</span>
+                    </div>
+                    <div class="col-6">
+                        <label class="small text-muted text-uppercase fw-bold d-block">Région</label>
+                        <span>${p.region}</span>
+                    </div>
+                    <div class="col-6">
+                        <label class="small text-muted text-uppercase fw-bold d-block">Zone / Quartier</label>
+                        <span>${p.zone} / ${p.quartier}</span>
+                    </div>
+                </div>
+
+                <div class="card bg-light border-0 mb-4">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-currency-exchange me-2"></i>Situation Financière</h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small text-muted">Redevance Annuelle:</span>
+                            <span class="fw-bold">${parseFloat(p.montant_de_la_redevance_annuelle).toLocaleString()} F</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 text-dark">
+                            <span class="small text-muted">Vignettes (Niveaux):</span>
+                            <span class="fw-bold">${p.vignettes_summary}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 text-primary">
+                            <span class="small fw-bold">Total à Recouvrer:</span>
+                            <span class="fw-bold fs-5">${parseFloat(p.montant_total_a_recouvrer).toLocaleString()} F</span>
+                        </div>
+                        <div class="small text-muted mt-2">
+                            <i class="bi bi-calendar-event me-1"></i> Expire le: ${p.date_d_expiration_de_la_redevance_annuelle}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-2"><i class="bi bi-person-check me-2"></i>Suivi</h6>
+                    <p class="small text-muted mb-0">Agent en charge :</p>
+                    <p class="fw-medium">${p.dossier_suivi_par || 'Non assigné'}</p>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <a href="/vet/${p.numero}/" class="btn btn-primary"><i class="bi bi-eye me-2"></i>Voir la fiche complète</a>
+                    <a href="/vet/${p.numero}/edit/" class="btn btn-outline-warning"><i class="bi bi-pencil me-2"></i>Modifier</a>
+                </div>
+            `;
+        }
+
+        // Fermeture du panneau
+        document.getElementById('close-panel').addEventListener('click', () => {
+            document.getElementById('side-panel').classList.remove('active');
+        });
+
+        // Événements des filtres
+        document.getElementById('filter-region').addEventListener('change', updateMap);
+        document.getElementById('filter-statut').addEventListener('change', updateMap);
+        document.getElementById('filter-frais').addEventListener('change', updateMap);
+        
+        document.getElementById('reset-map').addEventListener('click', () => {
+            document.getElementById('map-filters').reset();
+            updateMap();
+        });
+
+        // Initialisation
+        updateMap();
+    });
+  </script>
+{% endblock %}

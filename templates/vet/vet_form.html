@@ -28,34 +28,37 @@
         }
     });
 
-    // Gestion dynamique du formset des vignettes
-    document.getElementById('add-vignette').addEventListener('click', function() {
-        const formsetContainer = document.getElementById('vignettes-formset');
-        const totalForms = document.getElementById('id_vignettes_assignees-TOTAL_FORMS');
-        const currentCount = parseInt(totalForms.value);
-        
-        // Cloner la première ligne
-        const newRow = formsetContainer.querySelector('.vignette-row').cloneNode(true);
-        
-        // Mettre à jour les indices dans les noms et IDs
-        const regex = /vignettes_assignees-(\d+)-/g;
-        newRow.innerHTML = newRow.innerHTML.replace(regex, `vignettes_assignees-${currentCount}-`);
-        
-        // Réinitialiser les valeurs
-        newRow.querySelectorAll('select, input').forEach(input => {
-            if (input.type !== 'hidden') {
-                input.value = '';
-                if (input.type === 'checkbox') input.checked = false;
-            }
+    // Gestion dynamique du formset (Vignettes et Documents)
+    function setupFormset(btnId, containerId, totalFormsId, rowClass, prefix) {
+        document.getElementById(btnId).addEventListener('click', function() {
+            const formsetContainer = document.getElementById(containerId);
+            const totalForms = document.getElementById(totalFormsId);
+            const currentCount = parseInt(totalForms.value);
+            
+            const rows = formsetContainer.querySelectorAll('.' + rowClass);
+            const newRow = rows[0].cloneNode(true);
+            
+            const regex = new RegExp(`${prefix}-(\\d+)-`, 'g');
+            newRow.innerHTML = newRow.innerHTML.replace(regex, `${prefix}-${currentCount}-`);
+            
+            newRow.querySelectorAll('select, input, textarea').forEach(input => {
+                if (input.type !== 'hidden') {
+                    input.value = '';
+                    if (input.type === 'checkbox') input.checked = false;
+                }
+            });
+
+            // Supprimer les erreurs éventuelles du clone
+            newRow.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+            newRow.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            
+            formsetContainer.appendChild(newRow);
+            totalForms.value = currentCount + 1;
         });
+    }
 
-        // Supprimer les erreurs éventuelles du clone
-        newRow.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
-        newRow.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-
-        formsetContainer.appendChild(newRow);
-        totalForms.value = currentCount + 1;
-    });
+    setupFormset('add-vignette', 'vignettes-formset', 'id_vignettes_assignees-TOTAL_FORMS', 'vignette-row', 'vignettes_assignees');
+    setupFormset('add-document', 'documents-formset', 'id_documents-TOTAL_FORMS', 'document-row', 'documents');
 </script>
 {% endblock %}
 
@@ -63,50 +66,52 @@
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10 col-xl-8">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
+            <div class="row g-3 align-items-center mb-4">
+                <div class="col-12 col-md-8">
                     <h1 class="h3 mb-1 text-gray-800 fw-bold">
                         {% if form.instance.pk %}
-                            Modification de l'établissement
+                            Modification VET
                         {% else %}
-                            Nouvel établissement
+                            Nouveau Dossier VET
                         {% endif %}
                     </h1>
-                    <p class="text-muted mb-0">Remplissez les informations ci-dessous pour {% if form.instance.pk %}mettre à jour{% else %}créer{% endif %} l'établissement.</p>
+                    <p class="text-muted mb-0 small">Remplissez les informations ci-dessous pour {% if form.instance.pk %}mettre à jour{% else %}créer{% endif %} le dossier.</p>
                 </div>
-                <a href="{% url 'vet:vet_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-lg me-1"></i> Annuler
-                </a>
+                <div class="col-12 col-md-4 text-md-end">
+                    <a href="{% url 'vet:vet_list' %}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-left me-1"></i> Retour
+                    </a>
+                </div>
             </div>
 
-            <div class="card shadow-sm border-0">
-                <div class="card-body p-4">
-                    <form method="post" novalidate>
+            <div class="card shadow-sm border-0 mb-5">
+                <div class="card-body p-3 p-md-4">
+                    <form method="post" enctype="multipart/form-data" novalidate>
                         {% csrf_token %}
                         
                         {% if form.non_field_errors %}
-                            <div class="alert alert-danger mb-4 d-flex align-items-center">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div class="alert alert-danger mb-4 d-flex align-items-center small p-2">
+                                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
                                 <div>{{ form.non_field_errors }}</div>
                             </div>
                         {% endif %}
 
                         <!-- Section: Identification -->
-                        <div class="mb-5">
-                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="bi bi-building me-2"></i>Identification</h5>
+                        <div class="mb-4 mb-md-5">
+                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold small text-uppercase"><i class="bi bi-building me-2"></i>Identification</h5>
                             <div class="row g-3">
-                                <div class="col-md-12">
-                                    <label for="{{ form.identification_de_l_exploitant_ou_raison_sociale.id_for_label }}" class="form-label fw-medium">Raison Sociale / Exploitant <span class="text-danger">*</span></label>
+                                <div class="col-12">
+                                    <label for="{{ form.identification_de_l_exploitant_ou_raison_sociale.id_for_label }}" class="form-label fw-medium small">Raison Sociale / Exploitant <span class="text-danger">*</span></label>
                                     {% render_field form.identification_de_l_exploitant_ou_raison_sociale class+="form-control form-control-lg" placeholder="Nom de l’établissement" %}
                                     <div class="invalid-feedback">{{ form.identification_de_l_exploitant_ou_raison_sociale.errors|first }}</div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="{{ form.numero_ordre_de_recette.id_for_label }}" class="form-label fw-medium">N° Ordre de Recette</label>
+                                <div class="col-12 col-md-6">
+                                    <label for="{{ form.numero_ordre_de_recette.id_for_label }}" class="form-label fw-medium small">N° Ordre de Recette</label>
                                     {% render_field form.numero_ordre_de_recette class+="form-control" placeholder="ex: OR-2024-001" %}
                                     <div class="invalid-feedback">{{ form.numero_ordre_de_recette.errors|first }}</div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="{{ form.statut.id_for_label }}" class="form-label fw-medium">Statut</label>
+                                <div class="col-12 col-md-6">
+                                    <label for="{{ form.statut.id_for_label }}" class="form-label fw-medium small">Statut</label>
                                     {% render_field form.statut class+="form-select" %}
                                     <div class="invalid-feedback">{{ form.statut.errors|first }}</div>
                                 </div>
@@ -114,59 +119,57 @@
                         </div>
 
                         <!-- Section: Localisation & Contact -->
-                        <div class="mb-5">
-                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="bi bi-geo-alt me-2"></i>Localisation & Contact</h5>
+                        <div class="mb-4 mb-md-5">
+                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold small text-uppercase"><i class="bi bi-geo-alt me-2"></i>Localisation & Contact</h5>
                             <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label for="{{ form.region.id_for_label }}" class="form-label fw-medium">Région</label>
+                                <div class="col-6 col-md-4">
+                                    <label for="{{ form.region.id_for_label }}" class="form-label fw-medium small">Région</label>
                                     {% render_field form.region class+="form-control" placeholder="ex: Littoral" %}
                                 </div>
-                                <div class="col-md-4">
-                                    <label for="{{ form.zone.id_for_label }}" class="form-label fw-medium">Zone</label>
+                                <div class="col-6 col-md-4">
+                                    <label for="{{ form.zone.id_for_label }}" class="form-label fw-medium small">Zone</label>
                                     {% render_field form.zone class+="form-control" placeholder="ex: Zone A" %}
                                 </div>
-                                <div class="col-md-4">
-                                    <label for="{{ form.quartier.id_for_label }}" class="form-label fw-medium">Quartier</label>
+                                <div class="col-12 col-md-4">
+                                    <label for="{{ form.quartier.id_for_label }}" class="form-label fw-medium small">Quartier</label>
                                     {% render_field form.quartier class+="form-control" placeholder="ex: Akwa" %}
                                 </div>
                                 
-                                <div class="col-md-6">
-                                    <label for="{{ form.latitude.id_for_label }}" class="form-label fw-medium">Latitude</label>
+                                <div class="col-12 col-md-6">
+                                    <label for="{{ form.latitude.id_for_label }}" class="form-label fw-medium small">Latitude</label>
                                     <div class="input-group">
                                         {% render_field form.latitude class+="form-control" placeholder="ex: 4.0511" %}
                                         <button type="button" class="btn btn-outline-primary" id="btn-locate" title="Me localiser"><i class="bi bi-geo-alt"></i></button>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="{{ form.longitude.id_for_label }}" class="form-label fw-medium">Longitude</label>
+                                <div class="col-12 col-md-6">
+                                    <label for="{{ form.longitude.id_for_label }}" class="form-label fw-medium small">Longitude</label>
                                     {% render_field form.longitude class+="form-control" placeholder="ex: 9.7679" %}
                                 </div>
 
-                                <div class="col-md-6">
-                                    <label for="{{ form.numero_de_telephone.id_for_label }}" class="form-label fw-medium">Téléphone</label>
+                                <div class="col-12 col-md-6">
+                                    <label for="{{ form.numero_de_telephone.id_for_label }}" class="form-label fw-medium small">Téléphone</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="bi bi-telephone"></i></span>
-                                        {% render_field form.numero_de_telephone class+="form-control" placeholder="ex: +241 699000000" pattern="^\+?[0-9\s\-\(\)]{7,20}$" title="Veuillez entrer un numéro de téléphone valide (7 à 20 chiffres, peut inclure +, -, parenthèses et espaces)" %}
+                                        {% render_field form.numero_de_telephone class+="form-control" placeholder="ex: +241 699000000" %}
                                     </div>
-                                    <div class="invalid-feedback">{{ form.numero_de_telephone.errors|first }}</div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="{{ form.email.id_for_label }}" class="form-label fw-medium">Email</label>
+                                <div class="col-12 col-md-6">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label fw-medium small">Email</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                                         {% render_field form.email class+="form-control" type="email" placeholder="ex: contact@exemple.com" %}
                                     </div>
-                                    <div class="invalid-feedback">{{ form.email.errors|first }}</div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Section: Suivi Administratif -->
-                        <div class="mb-5">
-                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="bi bi-person-badge me-2"></i>Suivi Administratif</h5>
+                        <div class="mb-4 mb-md-5">
+                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold small text-uppercase"><i class="bi bi-person-badge me-2"></i>Suivi Administratif</h5>
                             <div class="row g-3">
-                                <div class="col-md-12">
-                                    <label for="{{ form.dossier_suivi_par.id_for_label }}" class="form-label fw-medium">Dossier suivi par (Agent Contrôleur)</label>
+                                <div class="col-12">
+                                    <label for="{{ form.dossier_suivi_par.id_for_label }}" class="form-label fw-medium small">Dossier suivi par (Agent Contrôleur)</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="bi bi-person-check"></i></span>
                                         {% render_field form.dossier_suivi_par class+="form-control" placeholder="Nom de l’agent en charge" %}
@@ -176,69 +179,101 @@
                         </div>
 
                         <!-- Section: Informations Financières -->
-                        <div class="mb-5">
-                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="bi bi-cash-coin me-2"></i>Informations Financières</h5>
+                        <div class="mb-4 mb-md-5">
+                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold small text-uppercase"><i class="bi bi-cash-coin me-2"></i>Informations Financières</h5>
                             <div class="row g-3">
                                 <!-- Vignettes Section (Dynamique) -->
-                                <div class="col-12">
-                                    <label class="form-label fw-bold text-muted small text-uppercase mb-2">Vignettes Assignées</label>
-                                    <div class="card bg-light border-0 p-3">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-bold text-muted x-small text-uppercase mb-2">Vignettes Assignées</label>
+                                    <div class="card bg-light border-0 p-2 p-md-3">
                                         {{ vignettes.management_form }}
                                         <div id="vignettes-formset">
                                             {% for v_form in vignettes %}
-                                            <div class="row g-2 mb-2 vignette-row border-bottom pb-2">
+                                            <div class="row g-2 mb-2 vignette-row border-bottom pb-2 align-items-end">
                                                 {% for hidden in v_form.hidden_fields %}
                                                     {{ hidden }}
                                                 {% endfor %}
-                                                <div class="col-md-7">
-                                                    <label class="small fw-bold">Catégorie</label>
+                                                <div class="col-7">
+                                                    <label class="x-small fw-bold text-muted">Catégorie</label>
                                                     {% render_field v_form.categorie class+="form-select form-select-sm" %}
                                                 </div>
-                                                <div class="col-md-3">
-                                                    <label class="small fw-bold">Quantité</label>
+                                                <div class="col-3">
+                                                    <label class="x-small fw-bold text-muted">Qté</label>
                                                     {% render_field v_form.quantite class+="form-control form-control-sm" min="0" %}
                                                 </div>
-                                                <div class="col-md-2 d-flex align-items-end">
+                                                <div class="col-2 text-center">
                                                     {% if vignettes.can_delete %}
-                                                        <div class="form-check mb-1">
-                                                            {% render_field v_form.DELETE class+="form-check-input" %}
-                                                            <label class="form-check-label small text-danger">Suppr.</label>
-                                                        </div>
+                                                        {% render_field v_form.DELETE class+="form-check-input m-0" %}
                                                     {% endif %}
                                                 </div>
                                             </div>
                                             {% endfor %}
                                         </div>
-                                        <div class="mt-2">
-                                            <button type="button" class="btn btn-sm btn-outline-primary" id="add-vignette">
-                                                <i class="bi bi-plus-circle me-1"></i> Ajouter une vignette
-                                            </button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="add-vignette">
+                                            <i class="bi bi-plus-circle me-1"></i> Ajouter
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Documents Section (Dynamique) -->
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-bold text-muted x-small text-uppercase mb-2">Documents (Photos, Scans)</label>
+                                    <div class="card bg-light border-0 p-2 p-md-3">
+                                        {{ documents.management_form }}
+                                        <div id="documents-formset">
+                                            {% for d_form in documents %}
+                                            <div class="row g-2 mb-2 document-row border-bottom pb-2 align-items-end">
+                                                {% for hidden in d_form.hidden_fields %}
+                                                    {{ hidden }}
+                                                {% endfor %}
+                                                <div class="col-12">
+                                                    <label class="x-small fw-bold text-muted">Fichier</label>
+                                                    {% render_field d_form.fichier class+="form-control form-control-sm" %}
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="x-small fw-bold text-muted">Type</label>
+                                                    {% render_field d_form.type_document class+="form-select form-select-sm" %}
+                                                </div>
+                                                <div class="col-4">
+                                                    <label class="x-small fw-bold text-muted">Desc.</label>
+                                                    {% render_field d_form.description class+="form-control form-control-sm" placeholder="ex: Photo façade" %}
+                                                </div>
+                                                <div class="col-2 text-center">
+                                                    {% if documents.can_delete %}
+                                                        {% render_field d_form.DELETE class+="form-check-input m-0" %}
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
                                         </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="add-document">
+                                            <i class="bi bi-plus-circle me-1"></i> Ajouter
+                                        </button>
                                     </div>
                                 </div>
                                 
-                                <div class="col-md-6">
-                                    <label for="{{ form.montant_de_la_redevance_annuelle.id_for_label }}" class="form-label fw-medium">Montant Annuel (FCFA)</label>
+                                <div class="col-12 col-md-6">
+                                    <label for="{{ form.montant_de_la_redevance_annuelle.id_for_label }}" class="form-label fw-medium small">Montant Annuel (FCFA)</label>
                                     {% render_field form.montant_de_la_redevance_annuelle class+="form-control" %}
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-medium">Total à Recouvrer (Calculé)</label>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-medium small">Total à Recouvrer (Calculé)</label>
                                     <div class="form-control bg-light fw-bold text-primary">
                                         {{ form.instance.montant_total_a_recouvrer|default:"0" }} FCFA
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <div class="form-check form-switch p-3 bg-light rounded border h-100">
                                         {% render_field form.frais_de_dossier_payes class+="form-check-input ms-0 me-3" role="switch" %}
-                                        <label class="form-check-label fw-medium" for="{{ form.frais_de_dossier_payes.id_for_label }}">
+                                        <label class="form-check-label fw-medium small" for="{{ form.frais_de_dossier_payes.id_for_label }}">
                                             Frais de dossier payés
                                         </label>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <div class="form-check form-switch p-3 bg-light rounded border h-100">
                                         {% render_field form.redevance_payee class+="form-check-input ms-0 me-3" role="switch" %}
-                                        <label class="form-check-label fw-medium" for="{{ form.redevance_payee.id_for_label }}">
+                                        <label class="form-check-label fw-medium small" for="{{ form.redevance_payee.id_for_label }}">
                                             Redevance annuelle payée
                                         </label>
                                     </div>
@@ -248,28 +283,28 @@
 
                         <!-- Section: Dates & Notes -->
                         <div class="mb-4">
-                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="bi bi-calendar3 me-2"></i>Dates & Notes</h5>
+                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold small text-uppercase"><i class="bi bi-calendar3 me-2"></i>Dates & Notes</h5>
                             <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label for="{{ form.date_d_emission_de_la_redevance_annuelle.id_for_label }}" class="form-label fw-medium">Date d'émission</label>
+                                <div class="col-6 col-md-6">
+                                    <label for="{{ form.date_d_emission_de_la_redevance_annuelle.id_for_label }}" class="form-label fw-medium small">Date d'émission</label>
                                     {% render_field form.date_d_emission_de_la_redevance_annuelle class+="form-control" type="date" %}
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="{{ form.date_d_expiration_de_la_redevance_annuelle.id_for_label }}" class="form-label fw-medium">Date d'expiration</label>
+                                <div class="col-6 col-md-6">
+                                    <label for="{{ form.date_d_expiration_de_la_redevance_annuelle.id_for_label }}" class="form-label fw-medium small">Date d'expiration</label>
                                     {% render_field form.date_d_expiration_de_la_redevance_annuelle class+="form-control" type="date" %}
                                 </div>
                                 <div class="col-12">
-                                    <label for="{{ form.notes.id_for_label }}" class="form-label fw-medium">Notes & Observations</label>
-                                    {% render_field form.notes class+="form-control" rows="4" placeholder="Ajoutez des notes supplémentaires ici..." %}
+                                    <label for="{{ form.notes.id_for_label }}" class="form-label fw-medium small">Notes & Observations</label>
+                                    {% render_field form.notes class+="form-control" rows="3" placeholder="Notes supplémentaires..." %}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                            <a href="{% url 'vet:vet_list' %}" class="btn btn-light border">Annuler</a>
-                            <button type="submit" class="btn btn-primary px-4 fw-bold">
-                                <i class="bi bi-check-lg me-1"></i> Enregistrer
+                        <div class="d-grid d-md-flex justify-content-md-end gap-2 pt-3 border-top mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold order-md-2 shadow-sm">
+                                <i class="bi bi-check-lg me-1"></i> Enregistrer le dossier
                             </button>
+                            <a href="{% url 'vet:vet_list' %}" class="btn btn-light btn-lg border order-md-1">Annuler</a>
                         </div>
                     </form>
                 </div>

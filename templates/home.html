@@ -6,28 +6,27 @@
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4 align-items-center">
-  <div class="col-md-6">
-    <h1 class="display-6 fw-bold text-dark mb-1">Tableau de bord</h1>
-    <p class="text-muted">Aperçu global de la gestion des redevances VET</p>
+<div class="row mb-4 align-items-center g-3">
+  <div class="col-12 col-md-6">
+    <h1 class="h2 fw-bold text-dark mb-1">Tableau de bord</h1>
+    <p class="text-muted mb-0">Aperçu global de la gestion des redevances VET</p>
   </div>
-  <div class="col-md-6 text-md-end">
+  <div class="col-12 col-md-6">
     <form class="d-flex flex-wrap justify-content-md-end gap-2" method="get">
-      <select name="period" class="form-select form-select-sm" style="width: 140px;" onchange="this.form.submit()">
-        <option value="all" {% if current_period == 'all' %}selected{% endif %}>Périodes</option>
-        <option value="month" {% if current_period == 'month' %}selected{% endif %}>Ce mois-ci</option>
-        <option value="year" {% if current_period == 'year' %}selected{% endif %}>Cette année</option>
-      </select>
-      <select name="region" class="form-select form-select-sm" style="width: 140px;" onchange="this.form.submit()">
-        <option value="">Régions</option>
-        {% for reg in regions %}
-        <option value="{{ reg }}" {% if current_region == reg %}selected{% endif %}>{{ reg }}</option>
-        {% endfor %}
-      </select>
-      <div class="btn-group shadow-sm ms-2">
-        <a href="{% url 'vet:vet_create' %}" class="btn btn-sm btn-primary">
-          <i class="bi bi-plus-lg me-1"></i> Nouveau
-        </a>
+      <div class="flex-grow-1 flex-md-grow-0">
+        <select name="period" class="form-select form-select-sm w-100" style="min-width: 130px;" onchange="this.form.submit()">
+          <option value="all" {% if current_period == 'all' %}selected{% endif %}>Toutes périodes</option>
+          <option value="month" {% if current_period == 'month' %}selected{% endif %}>Ce mois-ci</option>
+          <option value="year" {% if current_period == 'year' %}selected{% endif %}>Cette année</option>
+        </select>
+      </div>
+      <div class="flex-grow-1 flex-md-grow-0">
+        <select name="region" class="form-select form-select-sm w-100" style="min-width: 130px;" onchange="this.form.submit()">
+          <option value="">Toutes régions</option>
+          {% for reg in regions %}
+          <option value="{{ reg }}" {% if current_region == reg %}selected{% endif %}>{{ reg }}</option>
+          {% endfor %}
+        </select>
       </div>
     </form>
   </div>
@@ -58,54 +57,58 @@
 {% endif %}
 
 <!-- KPI Cards Principal -->
-<div class="row g-4 mb-4">
-  <div class="col-md-3">
+<div class="row g-3 g-md-4 mb-4">
+  <div class="col-6 col-md-3">
     <div class="card stat-card bg-white border-0 shadow-sm h-100 border-start border-4 border-primary">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <p class="text-muted text-uppercase fw-bold small mb-0">Total à Recouvrer</p>
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-center mb-2 mb-md-3">
+          <p class="text-muted text-uppercase fw-bold x-small mb-0 d-none d-md-block">Total à Recouvrer</p>
+          <p class="text-muted text-uppercase fw-bold x-small mb-0 d-md-none">Total</p>
           <i class="bi bi-cash-stack fs-4 text-primary opacity-50"></i>
         </div>
-        <h3 class="fw-bold">{{ total_a_recouvrer }} <small class="fs-6 text-muted">FCFA</small></h3>
-        <p class="text-muted small mb-0">Montant total attendu</p>
+        <h4 class="fw-bold mb-1">{{ total_a_recouvrer }}</h4>
+        <p class="text-muted small mb-0">FCFA</p>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
+  <div class="col-6 col-md-3">
     <div class="card stat-card bg-white border-0 shadow-sm h-100 border-start border-4 border-success">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <p class="text-muted text-uppercase fw-bold small mb-0">Taux Recouvrement</p>
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-center mb-2 mb-md-3">
+          <p class="text-muted text-uppercase fw-bold x-small mb-0 d-none d-md-block">Taux Recouvrement</p>
+          <p class="text-muted text-uppercase fw-bold x-small mb-0 d-md-none">Taux</p>
           <i class="bi bi-graph-up-arrow fs-4 text-success opacity-50"></i>
         </div>
-        <h3 class="fw-bold text-success">{{ taux_recouvrement }}%</h3>
-        <div class="progress mt-2" style="height: 6px;">
+        <h4 class="fw-bold text-success mb-1">{{ taux_recouvrement }}%</h4>
+        <div class="progress mt-2" style="height: 4px;">
           <div class="progress-bar bg-success" role="progressbar" style="width: {{ taux_recouvrement }}%" aria-valuenow="{{ taux_recouvrement }}" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
+  <div class="col-6 col-md-3">
     <div class="card stat-card bg-white border-0 shadow-sm h-100 border-start border-4 border-warning">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <p class="text-muted text-uppercase fw-bold small mb-0">En Retard</p>
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-center mb-2 mb-md-3">
+          <p class="text-muted text-uppercase fw-bold x-small mb-0 d-none d-md-block">En Retard</p>
+          <p class="text-muted text-uppercase fw-bold x-small mb-0 d-md-none">Retard</p>
           <i class="bi bi-clock-history fs-4 text-warning opacity-50"></i>
         </div>
-        <h3 class="fw-bold text-warning">{{ en_retard }}</h3>
-        <p class="text-muted small mb-0">Paiements hors délais</p>
+        <h4 class="fw-bold text-warning mb-1">{{ en_retard }}</h4>
+        <p class="text-muted small mb-0">Dossiers</p>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
+  <div class="col-6 col-md-3">
     <div class="card stat-card bg-white border-0 shadow-sm h-100 border-start border-4 border-info">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <p class="text-muted text-uppercase fw-bold small mb-0">Actifs / Total</p>
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-center mb-2 mb-md-3">
+          <p class="text-muted text-uppercase fw-bold x-small mb-0 d-none d-md-block">Actifs / Total</p>
+          <p class="text-muted text-uppercase fw-bold x-small mb-0 d-md-none">Actifs</p>
           <i class="bi bi-building fs-4 text-info opacity-50"></i>
         </div>
-        <h3 class="fw-bold text-info">{{ actifs }} <small class="fs-6 text-muted">/ {{ total_vet }}</small></h3>
-        <p class="text-muted small mb-0">Établissements en règle</p>
+        <h4 class="fw-bold text-info mb-1">{{ actifs }} <small class="fs-6 text-muted">/ {{ total_vet }}</small></h4>
+        <p class="text-muted small mb-0">Établissements</p>
       </div>
     </div>
   </div>
@@ -116,7 +119,7 @@
   <div class="col-lg-8">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2 text-primary"></i>Performance Mensuelle (Total à Recouvrer)</h5>
+        <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2 text-primary"></i>Évolution Mensuelle des Recettes</h5>
       </div>
       <div class="card-body">
         <canvas id="monthChart" height="280"></canvas>
@@ -126,11 +129,11 @@
   <div class="col-lg-4">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-success"></i>Répartition des Établissements</h5>
+        <h5 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-success"></i>Répartition par Région</h5>
       </div>
       <div class="card-body d-flex align-items-center justify-content-center">
-        <div style="width: 80%;">
-          <canvas id="statutChart"></canvas>
+        <div style="width: 100%; max-width: 250px;">
+          <canvas id="regionPieChart"></canvas>
         </div>
       </div>
     </div>
@@ -144,7 +147,40 @@
         <h5 class="mb-0 fw-bold"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Performance par Région</h5>
       </div>
       <div class="card-body">
-        <canvas id="regionChart" height="250"></canvas>
+        <canvas id="regionBarChart" height="250"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Nouveaux Indicateurs : Vignettes et Paiements -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-tags me-2 text-warning"></i>Distribution des Vignettes</h5>
+      </div>
+      <div class="card-body">
+        <canvas id="vignetteChart" height="250"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-credit-card-2-front me-2 text-danger"></i>Statut Global des Paiements</h5>
+      </div>
+      <div class="card-body">
+        <div class="row align-items-center h-100">
+          <div class="col-md-6">
+            <canvas id="paymentRedevanceChart"></canvas>
+            <p class="text-center small mt-2 fw-bold">Redevances</p>
+          </div>
+          <div class="col-md-6">
+            <canvas id="paymentFraisChart"></canvas>
+            <p class="text-center small mt-2 fw-bold">Frais de dossier</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -245,9 +281,9 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Données pour le graphique mensuel (Total à Recouvrer)
-    const monthLabels = [{% for stat in stats_month %}'{{ stat.month|date:"M Y" }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
-    const monthData = [{% for stat in stats_month %}{{ stat.total }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    // 1. Graphique Évolution Mensuelle (Line Chart)
+    const monthLabels = {{ monthly_labels|safe }};
+    const monthData = {{ monthly_data|safe }};
 
     const ctxMonth = document.getElementById('monthChart').getContext('2d');
     new Chart(ctxMonth, {
@@ -255,15 +291,16 @@ document.addEventListener('DOMContentLoaded', function() {
         data: {
             labels: monthLabels,
             datasets: [{
-                label: 'Total à Recouvrer (FCFA)',
+                label: 'Recettes (FCFA)',
                 data: monthData,
                 backgroundColor: 'rgba(13, 110, 253, 0.1)',
                 borderColor: 'rgba(13, 110, 253, 1)',
                 borderWidth: 3,
-                tension: 0.3,
+                tension: 0.4,
                 fill: true,
                 pointBackgroundColor: 'rgba(13, 110, 253, 1)',
-                pointRadius: 4
+                pointRadius: 4,
+                pointHoverRadius: 6
             }]
         },
         options: {
@@ -272,19 +309,22 @@ document.addEventListener('DOMContentLoaded', function() {
             scales: {
                 y: {
                     beginAtZero: true,
+                    grid: { borderDash: [5, 5] },
                     ticks: {
                         callback: function(value) {
-                            return value.toLocaleString() + ' F';
+                            return value >= 1000 ? (value/1000) + 'k' : value;
                         }
                     }
-                }
+                },
+                x: { grid: { display: false } }
             },
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    padding: 12,
                     callbacks: {
                         label: function(context) {
-                            return 'Total : ' + context.raw.toLocaleString() + ' FCFA';
+                            return ' Total : ' + context.raw.toLocaleString() + ' FCFA';
                         }
                     }
                 }
@@ -292,22 +332,59 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Données pour le graphique par région
-    const regionLabels = [{% for stat in stats_region %}'{{ stat.region }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
-    const regionData = [{% for stat in stats_region %}{{ stat.total }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    // 2. Graphique Répartition par Région (Pie Chart)
+    const regionLabels = {{ region_labels|safe }};
+    const regionData = {{ region_data|safe }};
 
-    const ctxRegion = document.getElementById('regionChart').getContext('2d');
-    new Chart(ctxRegion, {
+    const ctxRegionPie = document.getElementById('regionPieChart').getContext('2d');
+    new Chart(ctxRegionPie, {
+        type: 'doughnut',
+        data: {
+            labels: regionLabels,
+            datasets: [{
+                data: regionData,
+                backgroundColor: [
+                    '#0d6efd', '#198754', '#ffc107', '#0dcaf0', '#6610f2', 
+                    '#d63384', '#fd7e14', '#20c997', '#adb5bd'
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, padding: 15, font: { size: 11 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((context.raw / total) * 100);
+                            return ` ${context.label}: ${context.raw.toLocaleString()} F (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '65%'
+        }
+    });
+
+    // 3. Graphique Performance par Région (Bar Chart)
+    const ctxRegionBar = document.getElementById('regionBarChart').getContext('2d');
+    new Chart(ctxRegionBar, {
         type: 'bar',
         data: {
             labels: regionLabels,
             datasets: [{
-                label: 'Total à Recouvrer (FCFA)',
+                label: 'Total à Recouvrer',
                 data: regionData,
-                backgroundColor: 'rgba(13, 110, 253, 0.7)',
-                borderColor: 'rgba(13, 110, 253, 1)',
-                borderWidth: 1,
-                borderRadius: 5
+                backgroundColor: 'rgba(13, 110, 253, 0.8)',
+                hoverBackgroundColor: 'rgba(13, 110, 253, 1)',
+                borderRadius: 6,
+                barThickness: 30
             }]
         },
         options: {
@@ -329,25 +406,74 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Données pour le graphique de statut
-    const ctxStatut = document.getElementById('statutChart').getContext('2d');
-    new Chart(ctxStatut, {
-        type: 'doughnut',
+    // 4. Graphique Distribution des Vignettes (Polar Area)
+    const vignetteLabels = {{ vignette_labels|safe }};
+    const vignetteData = {{ vignette_data|safe }};
+
+    const ctxVignette = document.getElementById('vignetteChart').getContext('2d');
+    new Chart(ctxVignette, {
+        type: 'polarArea',
         data: {
-            labels: ['Actifs', 'Inactifs'],
+            labels: vignetteLabels,
             datasets: [{
-                data: [{{ actifs }}, {{ inactifs }}],
-                backgroundColor: ['#198754', '#6c757d'],
-                borderWidth: 0,
-                hoverOffset: 4
+                data: vignetteData,
+                backgroundColor: [
+                    'rgba(255, 193, 7, 0.6)', 'rgba(13, 110, 253, 0.6)', 
+                    'rgba(25, 135, 84, 0.6)', 'rgba(220, 53, 69, 0.6)', 
+                    'rgba(102, 16, 242, 0.6)'
+                ],
+                borderColor: '#ffffff',
+                borderWidth: 2
             }]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { position: 'bottom' }
+            maintainAspectRatio: false,
+            scales: {
+                r: { ticks: { display: false } }
             },
-            cutout: '70%'
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 10 } }
+            }
+        }
+    });
+
+    // 5. Graphiques Statut des Paiements (Doughnut Charts)
+    const paymentData = {{ payment_stats|safe }};
+
+    // Redevances
+    new Chart(document.getElementById('paymentRedevanceChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Payée', 'Due'],
+            datasets: [{
+                data: [paymentData.redevance_payee, paymentData.redevance_due],
+                backgroundColor: ['#198754', '#dc3545'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '75%',
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Frais de dossier
+    new Chart(document.getElementById('paymentFraisChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Payés', 'Dus'],
+            datasets: [{
+                data: [paymentData.frais_payes, paymentData.frais_dus],
+                backgroundColor: ['#0dcaf0', '#6c757d'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '75%',
+            plugins: { legend: { display: false } }
         }
     });
 });

@@ -156,3 +156,23 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.timestamp} - {self.action} par {self.user}"
+
+class VETDocument(models.Model):
+    DOCUMENT_TYPES = [
+        ('photo', 'Photo / Image'),
+        ('scan', 'Scan Document (PDF)'),
+        ('other', 'Autre'),
+    ]
+    vet = models.ForeignKey(VET, on_delete=models.CASCADE, related_name='documents', verbose_name="Dossier VET")
+    fichier = models.FileField(upload_to='vet_documents/%Y/%m/', verbose_name="Fichier")
+    type_document = models.CharField(max_length=20, choices=DOCUMENT_TYPES, default='photo', verbose_name="Type")
+    description = models.CharField(max_length=255, blank=True, verbose_name="Description")
+    date_upload = models.DateTimeField(auto_now_add=True, verbose_name="Date d'upload")
+
+    class Meta:
+        verbose_name = "Document VET"
+        verbose_name_plural = "Documents VET"
+        ordering = ['-date_upload']
+
+    def __str__(self):
+        return f"Doc {self.type_document} pour {self.vet.numero}"

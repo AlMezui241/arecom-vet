@@ -4,17 +4,20 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800 fw-bold">État des Stocks</h1>
-        <div class="d-flex gap-2">
-            <a href="{% url 'stock:stock_entry' %}" class="btn btn-primary shadow-sm">
-                <i class="bi bi-plus-lg me-1"></i> Nouvel Approvisionnement
-            </a>
-            <a href="{% url 'stock:movement_list' %}" class="btn btn-outline-secondary shadow-sm">
-                <i class="bi bi-journal-text me-1"></i> Journal des Mouvements
-            </a>
-        </div>
+<div class="row g-3 mb-4 align-items-center">
+    <div class="col-12 col-md-6">
+        <h1 class="h3 mb-1 text-gray-800 fw-bold">État des Stocks</h1>
+        <p class="text-muted mb-0 small">Suivi en temps réel des inventaires de vignettes</p>
     </div>
+    <div class="col-12 col-md-6 d-flex justify-content-md-end gap-2">
+        <a href="{% url 'stock:stock_entry' %}" class="btn btn-primary shadow-sm flex-grow-1 flex-md-grow-0">
+            <i class="bi bi-plus-lg me-1"></i> Approvisionner
+        </a>
+        <a href="{% url 'stock:movement_list' %}" class="btn btn-outline-secondary shadow-sm flex-grow-1 flex-md-grow-0">
+            <i class="bi bi-journal-text me-1"></i> Journal
+        </a>
+    </div>
+</div>
 
     <!-- Alertes de stock bas -->
     {% if low_stock_alerts %}

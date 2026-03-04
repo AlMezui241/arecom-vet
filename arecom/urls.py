@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from django.conf import settings
+from django.conf.urls.static import static
 from vet.views import HomeView
 
 urlpatterns = [
@@ -27,3 +29,6 @@ urlpatterns = [
     path('vet/', include(('vet.urls', 'vet'), namespace='vet')),
     path('stock/', include(('stock.urls', 'stock'), namespace='stock')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,8 +1,12 @@
 from django.contrib import admin
-from .models import VET, VETVignette, AuditLog
+from .models import VET, VETVignette, AuditLog, VETDocument
 
 class VETVignetteInline(admin.TabularInline):
     model = VETVignette
+    extra = 1
+
+class VETDocumentInline(admin.TabularInline):
+    model = VETDocument
     extra = 1
 
 @admin.register(VET)
@@ -17,7 +21,7 @@ class VETAdmin(admin.ModelAdmin):
     )
     search_fields = ('identification_de_l_exploitant_ou_raison_sociale', 'numero_ordre_de_recette', 'dossier_suivi_par')
     list_filter = ('region', 'zone', 'statut', 'frais_de_dossier_payes', 'redevance_payee', 'dossier_suivi_par')
-    inlines = [VETVignetteInline]
+    inlines = [VETVignetteInline, VETDocumentInline]
 
 @admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):

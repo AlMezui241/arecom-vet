@@ -1,5 +1,6 @@
 from django import forms
-from .models import VET
+from django.forms import inlineformset_factory
+from .models import VET, VETVignette, VETDocument
 
 
 class VETForm(forms.ModelForm):
@@ -40,3 +41,16 @@ class VETForm(forms.ModelForm):
             'date_d_emission_de_la_redevance_annuelle': forms.DateInput(attrs={'type': 'date'}),
             'date_d_expiration_de_la_redevance_annuelle': forms.DateInput(attrs={'type': 'date'}),
         }
+
+class VETDocumentForm(forms.ModelForm):
+    class Meta:
+        model = VETDocument
+        fields = ['fichier', 'type_document', 'description']
+
+VETDocumentFormSet = inlineformset_factory(
+    VET, VETDocument, form=VETDocumentForm, extra=1, can_delete=True
+)
+
+VETVignetteFormSet = inlineformset_factory(
+    VET, VETVignette, fields=['categorie', 'quantite'], extra=1, can_delete=True
+)

@@ -2,6 +2,7 @@ from django.db.models import Q, Sum, Count, F
 from django.db.models.functions import TruncMonth
 from django.urls import reverse_lazy
 from django.utils import timezone
+from datetime import timedelta
 from django.views import View
 from django.http import HttpResponse, HttpResponseForbidden, FileResponse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -9,14 +10,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.forms import inlineformset_factory
 from .models import VET, FRAIS_DOSSIER, VETVignette, AuditLog
 from stock.models import VignetteCategory
-from .forms import VETForm
-
-VETVignetteFormSet = inlineformset_factory(
-    VET, VETVignette,
-    fields=('categorie', 'quantite'),
-    extra=1,
-    can_delete=True
-)
+from .forms import VETForm, VETVignetteFormSet, VETDocumentFormSet
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
@@ -452,17 +446,22 @@ class VETCreateView(LoginRequiredMixin, CreateView):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
             data['vignettes'] = VETVignetteFormSet(self.request.POST)
+            data['documents'] = VETDocumentFormSet(self.request.POST, self.request.FILES)
         else:
             data['vignettes'] = VETVignetteFormSet()
+            data['documents'] = VETDocumentFormSet()
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
         vignettes = context['vignettes']
-        if vignettes.is_valid():
+        documents = context['documents']
+        if vignettes.is_valid() and documents.is_valid():
             self.object = form.save()
             vignettes.instance = self.object
             vignettes.save()
+            documents.instance = self.object
+            documents.save()
             # Re-sauvegarder pour mettre à jour le montant total incluant les nouvelles vignettes
             self.object.save()
             # Log audit
@@ -487,17 +486,22 @@ class VETUpdateView(LoginRequiredMixin, UpdateView):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
             data['vignettes'] = VETVignetteFormSet(self.request.POST, instance=self.object)
+            data['documents'] = VETDocumentFormSet(self.request.POST, self.request.FILES, instance=self.object)
         else:
             data['vignettes'] = VETVignetteFormSet(instance=self.object)
+            data['documents'] = VETDocumentFormSet(instance=self.object)
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
         vignettes = context['vignettes']
-        if vignettes.is_valid():
+        documents = context['documents']
+        if vignettes.is_valid() and documents.is_valid():
             self.object = form.save()
             vignettes.instance = self.object
             vignettes.save()
+            documents.instance = self.object
+            documents.save()
             # Re-sauvegarder pour mettre à jour le montant total incluant les nouvelles vignettes
             self.object.save()
             # Log audit (simple diff simulation)
@@ -581,6 +585,38 @@ class HomeView(LoginRequiredMixin, TemplateView):
         ctx["regions"] = VET.objects.order_by('region').values_list('region', flat=True).distinct()
         ctx["current_period"] = period
         ctx["current_region"] = region
+        
+        # --- Données pour les Graphiques ---
+        # 1. Évolution mensuelle (6 derniers mois)
+        six_months_ago = now - timedelta(days=180)
+        monthly_stats = VET.objects.filter(date_creation__gte=six_months_ago) \
+            .annotate(month=TruncMonth('date_creation')) \
+            .values('month') \
+            .annotate(total=Sum('montant_total_a_recouvrer')) \
+            .order_by('month')
+        
+        ctx["monthly_labels"] = [stat['month'].strftime('%b %Y') for stat in monthly_stats]
+        ctx["monthly_data"] = [float(stat['total']) for stat in monthly_stats]
+
+        # 2. Répartition par région (pour le camembert)
+        ctx["region_labels"] = [stat['region'] for stat in stats_region]
+        ctx["region_data"] = [float(stat['total']) for stat in stats_region]
+        
+        # 3. Répartition par Niveau de Vignette
+        vignette_stats = VETVignette.objects.filter(vet__in=qs).values('categorie__niveau') \
+            .annotate(total_qty=Sum('quantite')) \
+            .order_by('categorie__niveau')
+        
+        ctx["vignette_labels"] = [f"Niveau {stat['categorie__niveau']}" for stat in vignette_stats]
+        ctx["vignette_data"] = [stat['total_qty'] for stat in vignette_stats]
+
+        # 4. Statut des Paiements
+        ctx["payment_stats"] = {
+            "redevance_payee": qs.filter(redevance_payee=True).count(),
+            "redevance_due": qs.filter(redevance_payee=False).count(),
+            "frais_payes": qs.filter(frais_de_dossier_payes=True).count(),
+            "frais_dus": qs.filter(frais_de_dossier_payes=False).count(),
+        }
         
         return ctx
 

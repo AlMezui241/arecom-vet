@@ -10,6 +10,7 @@ python manage.py migrate
 # Création automatique du superutilisateur si les variables sont définies
 if [[ $DJANGO_SUPERUSER_USERNAME ]]; then
   python manage.py createsuperuser --no-input \
-    --username "$DJANGO_SUPERUSER_USERNAME" \
-    --email "$DJANGO_SUPERUSER_EMAIL" || true
+    --username "admin" \
+    --email "mezui123@gmail.com" || true
+    --password "admin123" || true
 fi

@@ -1,0 +1,6 @@
+# Force les scripts shell à utiliser les sauts de ligne Unix (LF)
+*.sh text eol=lf
+# Force le Procfile à utiliser LF
+Procfile text eol=lf
+# Gérer automatiquement les autres fichiers texte
+* text=auto

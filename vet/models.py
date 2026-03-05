@@ -83,7 +83,7 @@ class VET(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=Q(date_d_expiration_de_la_redevance_annuelle__gte=F("date_d_emission_de_la_redevance_annuelle")),
+                condition=Q(date_d_expiration_de_la_redevance_annuelle__gte=F("date_d_emission_de_la_redevance_annuelle")),
                 name="vet_expiration_gte_emission",
             ),
             models.CheckConstraint(

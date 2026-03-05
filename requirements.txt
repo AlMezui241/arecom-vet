@@ -9,3 +9,4 @@ openpyxl
 reportlab
 xhtml2pdf
 pypdf
+python-bidi==0.4.2

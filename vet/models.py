@@ -87,7 +87,7 @@ class VET(models.Model):
                 name="vet_expiration_gte_emission",
             ),
             models.CheckConstraint(
-                check=Q(montant_de_la_redevance_annuelle__gte=0),
+                condition=Q(montant_de_la_redevance_annuelle__gte=0),
                 name="vet_montant_nonneg",
             ),
         ]

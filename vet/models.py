@@ -59,14 +59,6 @@ class VET(models.Model):
         verbose_name="MONTANT DE LA REDEVANCE ANUELLE",
         validators=[MinValueValidator(Decimal("0.00"))],
     )
-    montant_total_a_recouvrer = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        verbose_name="MONTANT TOTAL À RECOUVRER",
-        validators=[MinValueValidator(Decimal("0.00"))],
-        null=True,
-        blank=True
-    )
     date_d_emission_de_la_redevance_annuelle = models.DateField(verbose_name="DATE D'EMISSION DE LA REDEVANCE ANNUELLE", db_index=True)
     date_d_expiration_de_la_redevance_annuelle = models.DateField(verbose_name="DATE D'EXPIRATION DE LA REDEVANCE ANNUELLE", db_index=True)
     
@@ -97,15 +89,36 @@ class VET(models.Model):
         # Représentation courte et lisible dans l’admin et les logs
         return f"{self.numero} - {self.identification_de_l_exploitant_ou_raison_sociale}"
     
-    def calculer_montant_total(self):
-        frais_dossier = FRAIS_DOSSIER if not self.frais_de_dossier_payes else Decimal("0.00")
-        
-        # Coût des vignettes calculé dynamiquement
+    @property
+    def montant_total_a_recouvrer(self):
+        """
+        Calcul à la volée du montant total à recouvrer.
+        Automatiquement mis à jour, pas de synchronisation nécessaire.
+
+        Formule:
+        montant_total = redevance_annuelle
+                      + frais_dossier (50,000 si non payés)
+                      + sum(vignettes assignées)
+        """
+        from django.db.models import F, Sum, DecimalField
+
+        frais_dossier = (
+            FRAIS_DOSSIER
+            if not self.frais_de_dossier_payes
+            else Decimal("0.00")
+        )
+
+        # Coût des vignettes via agrégation (pas de N+1 queries)
         total_vignettes = Decimal("0.00")
         if self.pk:
-            for vv in self.vignettes_assignees.all():
-                total_vignettes += vv.categorie.prix * vv.quantite
-        
+            agg_result = self.vignettes_assignees.aggregate(
+                total=Sum(
+                    F('quantite') * F('categorie__prix'),
+                    output_field=DecimalField()
+                )
+            )
+            total_vignettes = agg_result.get('total') or Decimal("0.00")
+
         return self.montant_de_la_redevance_annuelle + frais_dossier + total_vignettes
 
     def clean(self):
@@ -120,8 +133,9 @@ class VET(models.Model):
             )
 
     def save(self, *args, **kwargs):
-        # Calculer le montant avant la sauvegarde
-        self.montant_total_a_recouvrer = self.calculer_montant_total()
+        # ✅ CORRECTION #1: Valider les données avant sauvegarde
+        # Cela exécute le clean() et lève ValidationError si données invalides
+        self.full_clean()
         super().save(*args, **kwargs)
 
 class VETVignette(models.Model):

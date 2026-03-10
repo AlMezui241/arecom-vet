@@ -1,5 +1,4 @@
-from django.db.models import Q, Sum, Count, F
-from django.db.models.functions import TruncMonth
+from django.db.models import Q, Sum, Count, F, Value, DecimalField
 from django.urls import reverse_lazy
 from django.utils import timezone
 from datetime import timedelta
@@ -10,6 +9,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.forms import inlineformset_factory
 from .models import VET, FRAIS_DOSSIER, VETVignette, AuditLog
 from stock.models import VignetteCategory
+from decimal import Decimal
 from .forms import VETForm, VETVignetteFormSet, VETDocumentFormSet
 
 from reportlab.pdfgen import canvas
@@ -17,6 +17,24 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
 from io import BytesIO
+
+# ✅ Fonction utilitaire pour calculer le montant total (en Python)
+def calculate_total_amount_for_queryset(qs):
+    """
+    Calcule le montant total à recouvrer pour un queryset de VET.
+
+    Alternative à l'agrégation SQL qui ne peut pas accéder à @property.
+    Charge les VET avec prefetch_related puis calcule en Python.
+
+    Args:
+        qs: QuerySet de VET objects
+
+    Returns:
+        Decimal: Montant total à recouvrer
+    """
+    qs = qs.prefetch_related('vignettes_assignees', 'vignettes_assignees__categorie')
+    total = sum(vet.montant_total_a_recouvrer for vet in qs)
+    return Decimal(str(total)) if total else Decimal('0.00')
 
 class ExportVETPDFView(LoginRequiredMixin, View):
     """Génération d'un reçu/ordre de recette au format PDF"""
@@ -553,29 +571,41 @@ class HomeView(LoginRequiredMixin, TemplateView):
         # KPI Financiers
         # Montant total des redevances annuelles (dues ou payées)
         total_redevance = qs.aggregate(total=Sum('montant_de_la_redevance_annuelle'))['total'] or 0
-        
-        # Montant total à recouvrer (somme des montants calculés dans les modèles)
+
+        # Montant total à recouvrer (calcul via @property avec prefetch_related)
         # Note: montant_total_a_recouvrer inclut redevance + frais dossier (si non payé) + vignettes
-        total_a_recouvrer = qs.aggregate(total=Sum('montant_total_a_recouvrer'))['total'] or 0
-        
+        total_a_recouvrer = calculate_total_amount_for_queryset(qs)
+
         # Montants collectés (Précis : redevance payée + frais dossier payés)
         collectes_frais = qs.filter(frais_de_dossier_payes=True).count() * FRAIS_DOSSIER
         collectes_redevance = qs.filter(redevance_payee=True).aggregate(total=Sum('montant_de_la_redevance_annuelle'))['total'] or 0
         collectes = collectes_frais + collectes_redevance
-        
+
         # Retards de paiement (basé sur la date d'expiration)
         en_retard = qs.filter(date_d_expiration_de_la_redevance_annuelle__lt=now.date(), statut='actif').count()
-        
+
         ctx["total_redevance"] = total_redevance
         ctx["total_a_recouvrer"] = total_a_recouvrer
         ctx["taux_recouvrement"] = round((collectes / total_a_recouvrer * 100), 1) if total_a_recouvrer > 0 else 0
         ctx["en_retard"] = en_retard
-        
+
         # Comparaisons par région (Top 5)
-        stats_region = qs.values('region').annotate(
-            count=Count('numero'),
-            total=Sum('montant_total_a_recouvrer')
-        ).order_by('-total')[:5]
+        # Calcul du total par région en Python (avec prefetch_related)
+        regions_data = {}
+        for vet in qs.values('region').distinct():
+            region = vet['region']
+            region_qs = qs.filter(region=region)
+            regions_data[region] = {
+                'count': region_qs.count(),
+                'total': calculate_total_amount_for_queryset(region_qs)
+            }
+
+        # Trier par total descendant et prendre les top 5
+        stats_region = sorted(
+            [{'region': k, 'count': v['count'], 'total': float(v['total'])} for k, v in regions_data.items()],
+            key=lambda x: x['total'],
+            reverse=True
+        )[:5]
         ctx["stats_region"] = stats_region
         
         # Alertes de stock bas
@@ -589,13 +619,27 @@ class HomeView(LoginRequiredMixin, TemplateView):
         # --- Données pour les Graphiques ---
         # 1. Évolution mensuelle (6 derniers mois)
         six_months_ago = now - timedelta(days=180)
-        monthly_stats = VET.objects.filter(date_creation__gte=six_months_ago) \
-            .annotate(month=TruncMonth('date_creation')) \
-            .values('month') \
-            .annotate(total=Sum('montant_total_a_recouvrer')) \
-            .order_by('month')
+
+        # Charger les VET avec données liées pour calcul du montant
+        vets_by_month = {}
+        for vet in VET.objects.filter(date_creation__gte=six_months_ago) \
+                .prefetch_related('vignettes_assignees', 'vignettes_assignees__categorie'):
+            month_key = vet.date_creation.strftime('%Y-%m')
+            if month_key not in vets_by_month:
+                vets_by_month[month_key] = []
+            vets_by_month[month_key].append(vet)
+
+        # Calculer les totaux par mois
+        monthly_stats = []
+        for month_str in sorted(vets_by_month.keys()):
+            vets = vets_by_month[month_str]
+            total_month = sum(v.montant_total_a_recouvrer for v in vets)
+            monthly_stats.append({
+                'month': month_str,
+                'total': total_month
+            })
         
-        ctx["monthly_labels"] = [stat['month'].strftime('%b %Y') for stat in monthly_stats]
+        ctx["monthly_labels"] = [stat['month'].replace('-', ' / ') for stat in monthly_stats]
         ctx["monthly_data"] = [float(stat['total']) for stat in monthly_stats]
 
         # 2. Répartition par région (pour le camembert)

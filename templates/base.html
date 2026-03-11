@@ -21,6 +21,7 @@
         <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center me-2 shadow-sm" style="width: 32px; height: 32px;">
           <i class="bi bi-broadcast"></i>
         </div>
+<<<<<<< HEAD
         <span class="d-none d-sm-inline">ARCEP-VET</span><span class="d-inline d-sm-none">ARCEP-VET</span>
       </a>
       
@@ -43,13 +44,27 @@
           </li>
           <li class="nav-item">
             <a class="nav-link px-3 {% if 'vet' in request.path and 'list' in request.path %}active fw-bold text-white{% endif %}" href="{% url 'vet:vet_list' %}">
-              <i class="bi bi-list-ul me-1"></i> Liste
+              <i class="bi bi-list-ul me-1"></i> VET
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link px-3 {% if 'map' in request.path %}active fw-bold text-white{% endif %}" href="{% url 'vet:vet_map' %}">
               <i class="bi bi-map me-1"></i> Carte
             </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle px-3 {% if 'entites' in request.path %}active fw-bold text-white{% endif %}" href="#" id="navbarEntitesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-building me-1"></i> Autres Entités
+            </a>
+            <ul class="dropdown-menu shadow-lg border-0" aria-labelledby="navbarEntitesDropdown">
+              <li><a class="dropdown-item" href="{% url 'entites:list' %}"><i class="bi bi-list me-2"></i>Toutes les entités</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'entites:list' %}?type=distributeur"><i class="bi bi-building me-2"></i>Distributeurs</a></li>
+              <li><a class="dropdown-item" href="{% url 'entites:list' %}?type=reseau-prive"><i class="bi bi-diagram-3 me-2"></i>Réseaux Privés</a></li>
+              <li><a class="dropdown-item" href="{% url 'entites:list' %}?type=cybercafe"><i class="bi bi-pc-display me-2"></i>Cybercafés</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'entites:dashboard' %}"><i class="bi bi-graph-up me-2"></i>Dashboard</a></li>
+            </ul>
           </li>
           {% if user.is_superuser %}
           <li class="nav-item">

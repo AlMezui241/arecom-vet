@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator, FileExtensionValidator
 from django.core.exceptions import ValidationError
 from django.db.models import Q, F
 
@@ -16,15 +16,36 @@ class VET(models.Model):
 
     # Identifiants
     numero = models.AutoField(primary_key=True, verbose_name="N°")  # Clé primaire auto-incrémentée
-    numero_ordre_de_recette = models.CharField(max_length=100, verbose_name="N° ORDRE DE RECETTE", unique=True)
+    numero_ordre_de_recette = models.CharField(
+        max_length=100,
+        verbose_name="N° ORDRE DE RECETTE",
+        unique=True,
+        db_index=True  # ✅ FIX #6: Index pour recherches rapides (SQLite, MySQL compatible)
+    )
     identification_de_l_exploitant_ou_raison_sociale = models.CharField(max_length=255, verbose_name="IDENTIFICATION DE L'EXPLOITANT OU RAISON SOCIALE")
 
     # Localisation
     region = models.CharField(max_length=100, verbose_name="REGION", db_index=True)  # Région administrative
     zone = models.CharField(max_length=100, verbose_name="ZONE", db_index=True)  # Zone/sous-division
     quartier = models.CharField(max_length=100, verbose_name="QUARTIER", db_index=True)  # Quartier/localité
-    longitude = models.FloatField(verbose_name="Longitude", blank=True, null=True, validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)])  # Optionnel
-    latitude = models.FloatField(verbose_name="Latitude", blank=True, null=True, validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)])  # Optionnel
+    longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        verbose_name="Longitude",
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal("-180.0")), MaxValueValidator(Decimal("180.0"))],
+        help_text="Précision: ±0.111 km (6 décimales)"
+    )  # Optionnel (coordonnée GPS)
+    latitude = models.DecimalField(
+        max_digits=8,
+        decimal_places=6,
+        verbose_name="Latitude",
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal("-90.0")), MaxValueValidator(Decimal("90.0"))],
+        help_text="Précision: ±0.111 km (6 décimales)"
+    )  # Optionnel (coordonnée GPS)
 
     # Contact
     numero_de_telephone = models.CharField(
@@ -102,6 +123,9 @@ class VET(models.Model):
         """
         from django.db.models import F, Sum, DecimalField
 
+        # ✅ FIX: Gérer le cas où montant_de_la_redevance_annuelle est None
+        montant_redevance = self.montant_de_la_redevance_annuelle or Decimal("0.00")
+
         frais_dossier = (
             FRAIS_DOSSIER
             if not self.frais_de_dossier_payes
@@ -119,10 +143,20 @@ class VET(models.Model):
             )
             total_vignettes = agg_result.get('total') or Decimal("0.00")
 
-        return self.montant_de_la_redevance_annuelle + frais_dossier + total_vignettes
+        return montant_redevance + frais_dossier + total_vignettes
 
     def clean(self):
         super().clean()
+
+        # ✅ FIX #4: Valider que Longitude ET Latitude sont ensemble
+        has_lon = self.longitude is not None
+        has_lat = self.latitude is not None
+        if has_lon != has_lat:  # XOR: si l'un est présent, l'autre doit l'être aussi
+            raise ValidationError({
+                'latitude': 'Longitude ET Latitude doivent être fournis ensemble, ou aucun des deux.'
+            })
+
+        # Valider les dates
         if (
             self.date_d_emission_de_la_redevance_annuelle
             and self.date_d_expiration_de_la_redevance_annuelle
@@ -177,8 +211,18 @@ class VETDocument(models.Model):
         ('scan', 'Scan Document (PDF)'),
         ('other', 'Autre'),
     ]
+
+    # ✅ FIX #9: Validation fichiers
+    # Extensions autorisées pour sécurité (évite executable, archives, etc)
+    ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'doc', 'docx', 'txt', 'xls', 'xlsx']
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB max
+
     vet = models.ForeignKey(VET, on_delete=models.CASCADE, related_name='documents', verbose_name="Dossier VET")
-    fichier = models.FileField(upload_to='vet_documents/%Y/%m/', verbose_name="Fichier")
+    fichier = models.FileField(
+        upload_to='vet_documents/%Y/%m/',
+        verbose_name="Fichier",
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_EXTENSIONS)]
+    )
     type_document = models.CharField(max_length=20, choices=DOCUMENT_TYPES, default='photo', verbose_name="Type")
     description = models.CharField(max_length=255, blank=True, verbose_name="Description")
     date_upload = models.DateTimeField(auto_now_add=True, verbose_name="Date d'upload")
@@ -190,3 +234,11 @@ class VETDocument(models.Model):
 
     def __str__(self):
         return f"Doc {self.type_document} pour {self.vet.numero}"
+
+    def clean(self):
+        """Valider la taille du fichier"""
+        super().clean()
+        if self.fichier and self.fichier.size > self.MAX_FILE_SIZE:
+            raise ValidationError({
+                'fichier': f'Fichier trop volumineux (max {self.MAX_FILE_SIZE / 1024 / 1024:.0f} MB).'
+            })

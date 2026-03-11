@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        Modifier - {{ form.instance.numero }}
+    {% else %}
+        Ajouter une nouvelle entité
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1>
+                {% if form.instance.pk %}
+                    Modifier une entité
+                {% else %}
+                    Ajouter une nouvelle entité
+                {% endif %}
+            </h1>
+
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Identité</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Type d'entité *</label>
+                            {% include 'widget_tweaks/textarea.html' with field=form.type_entite %}
+                            {% if form.type_entite.errors %}
+                                <div class="alert alert-danger mt-2">{{ form.type_entite.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Numéro *</label>
+                            {% include 'widget_tweaks/input.html' with field=form.numero %}
+                            {% if form.numero.errors %}
+                                <div class="alert alert-danger mt-2">{{ form.numero.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nom / Raison Sociale *</label>
+                            {% include 'widget_tweaks/textarea.html' with field=form.nom_entite %}
+                            {% if form.nom_entite.errors %}
+                                <div class="alert alert-danger mt-2">{{ form.nom_entite.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Localisation</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Province *</label>
+                                {% include 'widget_tweaks/input.html' with field=form.province %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Localité *</label>
+                                {% include 'widget_tweaks/input.html' with field=form.localite %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Quartier/Zone *</label>
+                            {% include 'widget_tweaks/input.html' with field=form.quartier_zone %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Coordonnées</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Téléphone</label>
+                                {% include 'widget_tweaks/input.html' with field=form.telephone %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email</label>
+                                {% include 'widget_tweaks/input.html' with field=form.email %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">GPS</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Latitude</label>
+                                {% include 'widget_tweaks/input.html' with field=form.latitude %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Longitude</label>
+                                {% include 'widget_tweaks/input.html' with field=form.longitude %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Précision GPS</label>
+                            {% include 'widget_tweaks/input.html' with field=form.precision_gps %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Champs Financiers</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Frais d'instruction (FCFA)</label>
+                                {% include 'widget_tweaks/input.html' with field=form.frais_instruction_dossier %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Frais exploitation annuel (FCFA)</label>
+                                {% include 'widget_tweaks/input.html' with field=form.frais_exploitation_annuel %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Contribution fonds universel (FCFA)</label>
+                            {% include 'widget_tweaks/input.html' with field=form.contribution_fonds_universel %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Autorisation</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Statut</label>
+                            {% include 'widget_tweaks/textarea.html' with field=form.statut_autorisation %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Date d'attribution</label>
+                                {% include 'widget_tweaks/input.html' with field=form.date_attribution %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Date de renouvellement</label>
+                                {% include 'widget_tweaks/input.html' with field=form.date_renouvellement %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Date d'expiration</label>
+                            {% include 'widget_tweaks/input.html' with field=form.date_expiration %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Observations</h5>
+                    </div>
+                    <div class="card-body">
+                        {% include 'widget_tweaks/textarea.html' with field=form.observation %}
+                    </div>
+                </div>
+
+                <!-- Erreurs globales -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger mt-3">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <!-- Boutons -->
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        {% if form.instance.pk %}
+                            Enregistrer les modifications
+                        {% else %}
+                            Créer l'entité
+                        {% endif %}
+                    </button>
+                    <a href="{% url 'entites:list' %}" class="btn btn-secondary btn-lg">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

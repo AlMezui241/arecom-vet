@@ -28,6 +28,7 @@ urlpatterns = [
     path('', HomeView.as_view(), name='home'),
     path('vet/', include(('vet.urls', 'vet'), namespace='vet')),
     path('stock/', include(('stock.urls', 'stock'), namespace='stock')),
+    path('entites/', include(('entites.urls', 'entites'), namespace='entites')),
 ]
 
 if settings.DEBUG:

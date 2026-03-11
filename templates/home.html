@@ -114,6 +114,64 @@
   </div>
 </div>
 
+<!-- KPI Entités (Distributeurs, Réseaux, Cybercafés) -->
+<div class="row g-3 g-md-4 mb-4">
+  <div class="col-12">
+    <h5 class="fw-bold mb-3"><i class="bi bi-building me-2 text-primary"></i>Autres Entités Gérées</h5>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card bg-white border-0 shadow-sm h-100 border-start border-4 border-info">
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-center mb-2 mb-md-3">
+          <p class="text-muted text-uppercase fw-bold x-small mb-0">Total Entités</p>
+          <i class="bi bi-diagram-3 fs-4 text-info opacity-50"></i>
+        </div>
+        <h4 class="fw-bold mb-1">{{ total_entites }}</h4>
+        <p class="text-muted small mb-0"><a href="{% url 'entites:list' %}" class="text-decoration-none">Voir toutes</a></p>
+      </div>
+    </div>
+  </div>
+  {% for item in entites_par_type %}
+  <div class="col-6 col-md-3">
+    <div class="card stat-card bg-white border-0 shadow-sm h-100 border-start border-4 border-secondary">
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-center mb-2 mb-md-3">
+          <p class="text-muted text-uppercase fw-bold x-small mb-0">{{ item.type_entite__nom }}</p>
+          <i class="bi bi-building fs-4 text-secondary opacity-50"></i>
+        </div>
+        <h4 class="fw-bold mb-1">{{ item.count }}</h4>
+        <p class="text-muted small mb-0">
+          {% if item.total_redevance %}
+            {{ item.total_redevance|floatformat:0 }} FCFA
+          {% else %}
+            —
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Dernières Entités -->
+{% if latest_entites %}
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-primary"></i>Dernières Entités Enregistrées</h5>
+  </div>
+  {% for entite in latest_entites %}
+  <div class="col-md-6 col-lg-4">
+    {% include 'entites/components/entite_card.html' with entite=entite %}
+  </div>
+  {% endfor %}
+  <div class="col-12">
+    <a href="{% url 'entites:list' %}" class="btn btn-outline-primary">
+      <i class="bi bi-arrow-right me-1"></i>Voir toutes les entités
+    </a>
+  </div>
+</div>
+{% endif %}
+
 <!-- Graphiques et Performance -->
 <div class="row g-4 mb-4">
   <div class="col-lg-8">

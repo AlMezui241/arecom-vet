@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'vet',
     'stock',
+    'entites',
     'whitenoise.runserver_nostatic',
 ]
 

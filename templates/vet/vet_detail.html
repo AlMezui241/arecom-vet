@@ -160,7 +160,7 @@
                     <div class="d-flex flex-column gap-2">
                         {% for vv in vet.vignettes_assignees.all %}
                         <div class="d-flex justify-content-between align-items-center border-bottom border-white border-opacity-25 pb-1 small">
-                            <span>Niveau {{ vv.categorie.level|default:vv.categorie.niveau }}</span>
+                            <span>Niveau {{ vv.categorie.niveau }}</span>
                             <span class="fw-bold">x {{ vv.quantite }}</span>
                         </div>
                         {% empty %}

@@ -32,6 +32,8 @@ class MouvementStock(models.Model):
     utilisateur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Utilisateur")
     vet_reference = models.ForeignKey(VET, on_delete=models.SET_NULL, null=True, blank=True, related_name='mouvements_vignettes', verbose_name="Référence VET")
     commentaire = models.TextField(blank=True, verbose_name="Commentaires")
+    # ✅ FIX #4: Ajouter champ booléen pour identifier les mouvements automatiques (robuste)
+    est_automatique = models.BooleanField(default=False, verbose_name="Mouvement Automatique")
 
     def __str__(self):
         return f"{self.type_mouvement.capitalize()} - {self.category.niveau} - {self.quantite}"

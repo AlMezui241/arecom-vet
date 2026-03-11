@@ -9,6 +9,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.forms import inlineformset_factory
 from .models import VET, FRAIS_DOSSIER, VETVignette, AuditLog
 from stock.models import VignetteCategory
+from entites.models import Entite, TypeEntite
 from decimal import Decimal
 from .forms import VETForm, VETVignetteFormSet, VETDocumentFormSet
 
@@ -264,7 +265,7 @@ class ExportVETExcelListView(LoginRequiredMixin, AdminRequiredMixin, View):
                 item.get_statut_display(),
                 'Payé' if item.frais_de_dossier_payes else 'Non payé',
                 'Payée' if item.redevance_payee else 'Non payée',
-                float(item.montant_total_a_recouvrer)
+                item.montant_total_a_recouvrer  # ✅ FIX: Garder Decimal, pas float()
             ])
 
         # Ajuster la largeur des colonnes
@@ -309,8 +310,8 @@ class ExportVETExcelDetailView(LoginRequiredMixin, View):
             ['Statut', vet.get_statut_display()],
             ['', ''],
             ['DÉTAILS FINANCIERS', ''],
-            ['Redevance Annuelle', float(vet.montant_de_la_redevance_annuelle)],
-            ['Frais de dossier', float(FRAIS_DOSSIER if not vet.frais_de_dossier_payes else 0)],
+            ['Redevance Annuelle', vet.montant_de_la_redevance_annuelle],  # ✅ FIX: Garder Decimal
+            ['Frais de dossier', FRAIS_DOSSIER if not vet.frais_de_dossier_payes else Decimal('0.00')],  # ✅ FIX: Garder Decimal
         ]
         
         for row in data:
@@ -318,10 +319,10 @@ class ExportVETExcelDetailView(LoginRequiredMixin, View):
             
         ws.append(['Vignettes Assignées', ''])
         for vv in vet.vignettes_assignees.all():
-            ws.append([f"Niveau {vv.categorie.niveau}", float(vv.categorie.prix * vv.quantite)])
-            
+            ws.append([f"Niveau {vv.categorie.niveau}", vv.categorie.prix * vv.quantite])  # ✅ FIX: Garder Decimal
+
         ws.append(['', ''])
-        ws.append(['TOTAL À RECOUVRER', float(vet.montant_total_a_recouvrer)])
+        ws.append(['TOTAL À RECOUVRER', vet.montant_total_a_recouvrer])  # ✅ FIX: Garder Decimal
         
         # Style pour le total
         last_row = ws.max_row
@@ -590,22 +591,27 @@ class HomeView(LoginRequiredMixin, TemplateView):
         ctx["en_retard"] = en_retard
 
         # Comparaisons par région (Top 5)
-        # Calcul du total par région en Python (avec prefetch_related)
+        # ✅ OPTIMISATION #1: Charger UNE FOIS en Python au lieu de N requêtes
+        # Grouper les VET par région
         regions_data = {}
-        for vet in qs.values('region').distinct():
-            region = vet['region']
-            region_qs = qs.filter(region=region)
-            regions_data[region] = {
-                'count': region_qs.count(),
-                'total': calculate_total_amount_for_queryset(region_qs)
-            }
+        for vet in qs.prefetch_related('vignettes_assignees', 'vignettes_assignees__categorie'):
+            region = vet.region
+            if region not in regions_data:
+                regions_data[region] = []
+            regions_data[region].append(vet)
+
+        # Calculer count et total pour chaque région
+        regions_stats = []
+        for region, vets in regions_data.items():
+            region_total = sum(v.montant_total_a_recouvrer for v in vets)
+            regions_stats.append({
+                'region': region,
+                'count': len(vets),
+                'total': float(region_total)
+            })
 
         # Trier par total descendant et prendre les top 5
-        stats_region = sorted(
-            [{'region': k, 'count': v['count'], 'total': float(v['total'])} for k, v in regions_data.items()],
-            key=lambda x: x['total'],
-            reverse=True
-        )[:5]
+        stats_region = sorted(regions_stats, key=lambda x: x['total'], reverse=True)[:5]
         ctx["stats_region"] = stats_region
         
         # Alertes de stock bas
@@ -661,11 +667,30 @@ class HomeView(LoginRequiredMixin, TemplateView):
             "frais_payes": qs.filter(frais_de_dossier_payes=True).count(),
             "frais_dus": qs.filter(frais_de_dossier_payes=False).count(),
         }
-        
+
+        # --- Stats des ENTITÉS (Distributeurs, Réseaux, Cybercafés) ---
+        ctx["total_entites"] = Entite.objects.count()
+
+        # Grouper par type d'entité
+        entites_par_type = Entite.objects.values('type_entite__nom').annotate(
+            count=Count('id'),
+            total_redevance=Sum('frais_exploitation_annuel')
+        ).order_by('-count')
+        ctx["entites_par_type"] = entites_par_type
+
+        # Dernières entités pour affichage
+        ctx["latest_entites"] = Entite.objects.select_related('type_entite').order_by('-created_at')[:5]
+
+        # Total des redevances entités
+        ctx["total_redevance_entites"] = Entite.objects.aggregate(
+            total=Sum('frais_exploitation_annuel')
+        )['total'] or Decimal('0.00')
+
         return ctx
 
 
-class VETMapView(LoginRequiredMixin, TemplateView):
+class VETMapView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
+    """Carte interactive avec données GPS (admin seulement)"""
     template_name = "vet/vet_maps.html"
 
     def get_context_data(self, **kwargs):

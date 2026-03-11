@@ -47,6 +47,18 @@ class VETDocumentForm(forms.ModelForm):
         model = VETDocument
         fields = ['fichier', 'type_document', 'description']
 
+    def clean_fichier(self):
+        """✅ FIX #3: Valider la taille du fichier avec message d'erreur clair"""
+        fichier = self.cleaned_data.get('fichier')
+        if fichier:
+            if fichier.size > VETDocument.MAX_FILE_SIZE:
+                max_size_mb = VETDocument.MAX_FILE_SIZE / 1024 / 1024
+                raise forms.ValidationError(
+                    f"Fichier trop volumineux. Taille maximum: {max_size_mb:.0f} MB. "
+                    f"Votre fichier fait {fichier.size / 1024 / 1024:.1f} MB."
+                )
+        return fichier
+
 VETDocumentFormSet = inlineformset_factory(
     VET, VETDocument, form=VETDocumentForm, extra=1, can_delete=True
 )

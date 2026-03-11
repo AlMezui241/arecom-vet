@@ -16,7 +16,7 @@ class EntiteListView(LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        queryset = Entite.objects.select_related('type_entite', 'categorie').all()
+        queryset = Entite.objects.select_related('type_entite').all()
 
         # Filtrer par type si spécifié
         type_slug = self.request.GET.get('type')

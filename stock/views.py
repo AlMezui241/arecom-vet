@@ -1,20 +1,14 @@
 from django.shortcuts import render
 from django.views.generic import ListView, CreateView, TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy
 from django.http import HttpResponseForbidden
 from django.db.models import F
 from .models import MouvementStock, VignetteCategory
 from .forms import StockEntryForm
 
-class AdminRequiredMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.request.user.is_superuser
-
-    def handle_no_permission(self):
-        return HttpResponseForbidden("Vous n'avez pas les droits d'administration nécessaires.")
-
-class StockStatusListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
+class StockStatusListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = 'stock.view_vignettecategory'
     model = VignetteCategory
     template_name = "stock/stock_status.html"
     context_object_name = "categories"
@@ -25,7 +19,8 @@ class StockStatusListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
         context['low_stock_alerts'] = VignetteCategory.objects.filter(stock_actuel__lte=F('seuil_alerte'))
         return context
 
-class StockMovementListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
+class StockMovementListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = 'stock.view_mouvementstock'
     model = MouvementStock
     template_name = "stock/stock_movement_list.html"
     context_object_name = "movements"
@@ -34,7 +29,8 @@ class StockMovementListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
     def get_queryset(self):
         return MouvementStock.objects.all().select_related('category', 'utilisateur', 'vet_reference')
 
-class StockEntryCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
+class StockEntryCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    permission_required = 'stock.add_mouvementstock'
     model = MouvementStock
     form_class = StockEntryForm
     template_name = "stock/stock_entry_form.html"

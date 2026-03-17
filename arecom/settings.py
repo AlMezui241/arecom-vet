@@ -21,13 +21,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-0&4(%-wx7)%qaxd^_a=ez_+!h+^j3s#2tjt5^23mqy8+)#0$t&')
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'False'
 
-ALLOWED_HOSTS = ["*"]
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-0&4(%-wx7)%qaxd^_a=ez_+!h+^j3s#2tjt5^23mqy8+)#0$t&')
+
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '192.168.4.149,localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'vet',
     'stock',
-    'entites',
+    'activites',
     'whitenoise.runserver_nostatic',
 ]
 
@@ -82,8 +82,9 @@ WSGI_APPLICATION = 'arecom.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
     )
 }
 
@@ -143,6 +144,14 @@ STORAGES = {
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
+
+# Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.example.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'your-email@example.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'your-email-password')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

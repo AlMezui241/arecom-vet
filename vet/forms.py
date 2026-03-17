@@ -29,6 +29,10 @@ class VETForm(forms.ModelForm):
             "numero_de_telephone",
             "email",
             "dossier_suivi_par",
+            "possede_vignettes",
+            "presence_facture",
+            "presence_autorisation",
+            "presence_homologation",
             "frais_de_dossier_payes",
             "redevance_payee",
             "montant_de_la_redevance_annuelle",
@@ -46,6 +50,10 @@ class VETDocumentForm(forms.ModelForm):
     class Meta:
         model = VETDocument
         fields = ['fichier', 'type_document', 'description']
+        widgets = {
+            # ✅ Ajoute l'attribut capture pour mobile
+            'fichier': forms.FileInput(attrs={'capture': 'environment'}),
+        }
 
     def clean_fichier(self):
         """✅ FIX #3: Valider la taille du fichier avec message d'erreur clair"""

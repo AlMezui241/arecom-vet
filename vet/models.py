@@ -72,6 +72,12 @@ class VET(models.Model):
         verbose_name="DOSSIER SUIVI PAR"
     )
     
+    # Nouveaux champs de statut et de conformité
+    possede_vignettes = models.BooleanField(default=True, verbose_name="VIGNETTES PRÉSENTES ?")
+    presence_facture = models.BooleanField(default=False, verbose_name="FACTURE PRÉSENTE ?")
+    presence_autorisation = models.BooleanField(default=False, verbose_name="AUTORISATION PRÉSENTE ?")
+    presence_homologation = models.BooleanField(default=False, verbose_name="HOMOLOGATION PRÉSENTE ?")
+    
     # Les quantités de vignettes sont désormais gérées dynamiquement via VETVignette
 
     montant_de_la_redevance_annuelle = models.DecimalField(
@@ -117,15 +123,17 @@ class VET(models.Model):
         Automatiquement mis à jour, pas de synchronisation nécessaire.
 
         Formule:
-        montant_total = redevance_annuelle
-                      + frais_dossier (50,000 si non payés)
+        montant_total = redevance_annuelle (Frais annuels d'exploitation)
+                      + frais_dossier (Frais d'instruction de dossier - 50,000 si non payés)
                       + sum(vignettes assignées)
         """
         from django.db.models import F, Sum, DecimalField
 
-        # ✅ FIX: Gérer le cas où montant_de_la_redevance_annuelle est None
+        # ✅ Gérer le cas où montant_de_la_redevance_annuelle est None
+        # Correspond aux "frais annuels d'exploitation" (ex: 150 000)
         montant_redevance = self.montant_de_la_redevance_annuelle or Decimal("0.00")
 
+        # Correspond aux "frais d'instruction de dossier" (50 000)
         frais_dossier = (
             FRAIS_DOSSIER
             if not self.frais_de_dossier_payes

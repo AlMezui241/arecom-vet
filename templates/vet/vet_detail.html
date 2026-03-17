@@ -87,6 +87,40 @@
                                 <span class="fw-bold">{{ vet.date_creation|date:"d/m/Y" }}</span>
                             </div>
                         </div>
+
+                        <!-- Nouveau: Conformité de terrain -->
+                        <div class="mt-4">
+                            <label class="x-small text-muted text-uppercase fw-bold d-block mb-2">Conformité de terrain</label>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-4">
+                                    <div class="p-2 rounded border {% if vet.presence_facture %}bg-success bg-opacity-10 border-success{% else %}bg-light border-secondary opacity-50{% endif %} d-flex align-items-center">
+                                        <i class="bi {% if vet.presence_facture %}bi-check-circle-fill text-success{% else %}bi-x-circle text-muted{% endif %} fs-5 me-2"></i>
+                                        <span class="small fw-bold">Facture présente</span>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="p-2 rounded border {% if vet.presence_autorisation %}bg-success bg-opacity-10 border-success{% else %}bg-light border-secondary opacity-50{% endif %} d-flex align-items-center">
+                                        <i class="bi {% if vet.presence_autorisation %}bi-check-circle-fill text-success{% else %}bi-x-circle text-muted{% endif %} fs-5 me-2"></i>
+                                        <span class="small fw-bold">Autorisation présente</span>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="p-2 rounded border {% if vet.presence_homologation %}bg-success bg-opacity-10 border-success{% else %}bg-light border-secondary opacity-50{% endif %} d-flex align-items-center">
+                                        <i class="bi {% if vet.presence_homologation %}bi-check-circle-fill text-success{% else %}bi-x-circle text-muted{% endif %} fs-5 me-2"></i>
+                                        <span class="small fw-bold">Homologation présente</span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="p-2 rounded border {% if vet.possede_vignettes %}bg-info bg-opacity-10 border-info{% else %}bg-warning bg-opacity-10 border-warning{% endif %} d-flex align-items-center">
+                                        <i class="bi {% if vet.possede_vignettes %}bi-shield-fill-check text-info{% else %}bi-shield-fill-exclamation text-warning{% endif %} fs-5 me-2"></i>
+                                        <div>
+                                            <span class="small fw-bold">Statut Vignettes :</span>
+                                            <span class="small">{% if vet.possede_vignettes %}Déjà en règle sur site{% else %}Besoin de nouvelles vignettes identifié{% endif %}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

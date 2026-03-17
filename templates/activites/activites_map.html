@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Activités · Carte{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    .main-container { height: calc(100vh - 120px); display: flex; flex-direction: column; }
+    .map-wrapper { flex: 1; overflow: hidden; position: relative; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    #map { width: 100%; height: 100%; z-index: 1; }
+    .filter-bar { background: white; padding: 10px 15px; border-bottom: 1px solid #dee2e6; z-index: 3; }
+    .legend { background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.2); line-height: 1.5; font-size: 12px; }
+    .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7; border-radius: 50%; }
+    @media (max-width: 768px) {
+      .main-container { height: auto; min-height: 100vh; }
+      #map { height: 60vh; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="filter-bar shadow-sm mb-3 rounded">
+        <form id="map-filters" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-alt text-muted"></i></span>
+                    <select class="form-select border-start-0" id="filter-province">
+                        <option value="">Toutes les provinces</option>
+                        {% for prov in provinces %}
+                        <option value="{{ prov }}">{{ prov }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-check-circle text-muted"></i></span>
+                    <select class="form-select border-start-0" id="filter-statut">
+                        <option value="">Tous les statuts</option>
+                        <option value="actif">Actif</option>
+                        <option value="inactif">Inactif</option>
+                        <option value="suspendu">Suspendu</option>
+                        <option value="termine">Terminé</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge bg-primary rounded-pill" id="point-count">0 entité(s)</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" id="reset-map">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="map-wrapper">
+        <div id="map"></div>
+    </div>
+</div>
+
+{{ activite_points|json_script:"activite-points-data" }}
+{% endblock %}
+
+{% block extra_js %}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const rawPoints = JSON.parse(document.getElementById('activite-points-data').textContent);
+
+        const map = L.map('map', {
+            center: [0, 0],
+            zoom: 2
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const greenIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+        const redIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        const markersLayer = L.layerGroup().addTo(map);
+
+        function updateMap() {
+            markersLayer.clearLayers();
+
+            const province = document.getElementById('filter-province').value;
+            const statut = document.getElementById('filter-statut').value;
+
+            const filtered = rawPoints.filter(p => {
+                if (province && p.province !== province) return false;
+                if (statut && p.statut !== statut) return false;
+                return true;
+            });
+
+            document.getElementById('point-count').textContent = `${filtered.length} activité(s)`;
+
+            const markers = [];
+            filtered.forEach(p => {
+                const icon = p.redevance_payee ? greenIcon : redIcon;
+                const m = L.marker([p.latitude, p.longitude], { icon: icon })
+                    .bindPopup(
+                        `<strong>${p.nom_activite}</strong><br>` +
+                        `<small>${p.type_activite} · ${p.localite}, ${p.province}</small><br>` +
+                        `<small>Total redevances: ${p.montant_total_redevance.toLocaleString()} FCFA</small>`
+                    );
+                m.addTo(markersLayer);
+                markers.push(m);
+            });
+
+            if (markers.length) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        document.getElementById('filter-province').addEventListener('change', updateMap);
+        document.getElementById('filter-statut').addEventListener('change', updateMap);
+        document.getElementById('reset-map').addEventListener('click', () => {
+            document.getElementById('map-filters').reset();
+            updateMap();
+        });
+
+        updateMap();
+    });
+  </script>
+{% endblock %}
+

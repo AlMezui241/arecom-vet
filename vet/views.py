@@ -4,12 +4,12 @@ from django.utils import timezone
 from datetime import timedelta
 from django.views import View
 from django.http import HttpResponse, HttpResponseForbidden, FileResponse
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.forms import inlineformset_factory
 from .models import VET, FRAIS_DOSSIER, VETVignette, AuditLog
 from stock.models import VignetteCategory
-from entites.models import Entite, TypeEntite
+from activites.models import Activite, TypeActivite
 from decimal import Decimal
 from .forms import VETForm, VETVignetteFormSet, VETDocumentFormSet
 
@@ -72,47 +72,70 @@ class ExportVETPDFView(LoginRequiredMixin, View):
             p.drawString(2*cm, height - 8.4*cm, f"Localisation : {vet.quartier}, {vet.zone}, {vet.region}")
             p.drawString(2*cm, height - 9.1*cm, f"Téléphone : {vet.numero_de_telephone or 'N/A'}")
 
-            # Détails Financiers
+            # Détails Financiers (Tableau Exhaustif)
             p.setFont(font_bold, 12)
             p.drawString(2*cm, height - 10.5*cm, "DÉTAILS DES FRAIS")
             
             y = height - 11.2*cm
-            p.setFont(font_reg, 11)
-            p.drawString(2*cm, y, "Libellé")
-            p.drawRightString(width - 2*cm, y, "Montant (FCFA)")
+            p.setFont(font_bold, 10)
+            p.drawString(2*cm, y, "N°")
+            p.drawString(3*cm, y, "Désignation")
+            p.drawString(10*cm, y, "Niveau")
+            p.drawString(12*cm, y, "Qté")
+            p.drawRightString(width - 4.5*cm, y, "P.U (FCFA)")
+            p.drawRightString(width - 2*cm, y, "Total (FCFA)")
             p.line(2*cm, y - 0.2*cm, width - 2*cm, y - 0.2*cm)
             
+            p.setFont(font_reg, 10)
+            # 1. Frais d'instruction
             y -= 0.8*cm
-            p.drawString(2.5*cm, y, "Redevance Annuelle")
-            p.drawRightString(width - 2*cm, y, f" {float(vet.montant_de_la_redevance_annuelle):,.0f}")
+            p.drawString(2*cm, y, "1")
+            p.drawString(3*cm, y, "Frais d'instruction de dossier")
+            p.drawString(10*cm, y, "-")
+            p.drawString(12*cm, y, "1")
+            p.drawRightString(width - 4.5*cm, y, f"{float(FRAIS_DOSSIER):,.0f}")
+            p.drawRightString(width - 2*cm, y, f"{float(FRAIS_DOSSIER):,.0f}")
             
+            # 2. Frais annuels d'exploitation
             y -= 0.6*cm
-            if not vet.frais_de_dossier_payes:
-                p.drawString(2.5*cm, y, "Frais de dossier")
-                p.drawRightString(width - 2*cm, y, f" {float(FRAIS_DOSSIER):,.0f}")
-                y -= 0.6*cm
+            p.drawString(2*cm, y, "2")
+            p.drawString(3*cm, y, "Frais annuels d'exploitation")
+            p.drawString(10*cm, y, "-")
+            p.drawString(12*cm, y, "1")
+            p.drawRightString(width - 4.5*cm, y, f"{float(vet.montant_de_la_redevance_annuelle):,.0f}")
+            p.drawRightString(width - 2*cm, y, f"{float(vet.montant_de_la_redevance_annuelle):,.0f}")
             
-            # Vignettes
+            # 3. Vignettes
+            idx = 3
             for vv in vet.vignettes_assignees.all():
-                p.drawString(2.5*cm, y, f"Vignette Niveau {vv.categorie.niveau} ({float(vv.categorie.prix):,.0f} F) x{vv.quantite}")
-                p.drawRightString(width - 2*cm, y, f" {float(vv.categorie.prix * vv.quantite):,.0f}")
                 y -= 0.6*cm
+                p.drawString(2*cm, y, str(idx))
+                p.drawString(3*cm, y, f"Frais de vignettes pour équipement")
+                p.drawString(10*cm, y, str(vv.categorie.niveau))
+                p.drawString(12*cm, y, str(vv.quantite))
+                p.drawRightString(width - 4.5*cm, y, f"{float(vv.categorie.prix):,.0f}")
+                p.drawRightString(width - 2*cm, y, f"{float(vv.categorie.prix * vv.quantite):,.0f}")
+                idx += 1
 
-            p.line(width - 5*cm, y - 0.2*cm, width - 2*cm, y - 0.2*cm)
-            y -= 0.8*cm
+            p.line(width - 5*cm, y - 0.4*cm, width - 2*cm, y - 0.4*cm)
+            y -= 1*cm
             p.setFont(font_bold, 12)
             p.drawString(2*cm, y, "TOTAL À RECOUVRER")
-            p.drawRightString(width - 2*cm, y, f" {float(vet.montant_total_a_recouvrer):,.0f}")
+            p.drawRightString(width - 2*cm, y, f"{float(vet.montant_total_a_recouvrer):,.0f} FCFA")
 
-            # Statuts de paiement
+            # Statuts de conformité et paiement
             y -= 1.5*cm
             p.setFont(font_bold, 11)
-            p.drawString(2*cm, y, "STATUT DES PAIEMENTS :")
-            p.setFont(font_reg, 11)
+            p.drawString(2*cm, y, "CONFORMITÉ ET PAIEMENT :")
+            p.setFont(font_reg, 10)
             y -= 0.6*cm
-            p.drawString(2.5*cm, y, f"Frais de dossier : {'PAYÉS' if vet.frais_de_dossier_payes else 'NON PAYÉS'}")
-            y -= 0.6*cm
-            p.drawString(2.5*cm, y, f"Redevance Annuelle : {'PAYÉE' if vet.redevance_payee else 'NON PAYÉE'}")
+            p.drawString(2.5*cm, y, f"Facture d'achat présente : {'OUI' if vet.presence_facture else 'NON'}")
+            y -= 0.5*cm
+            p.drawString(2.5*cm, y, f"Autorisation présente : {'OUI' if vet.presence_autorisation else 'NON'}")
+            y -= 0.5*cm
+            p.drawString(2.5*cm, y, f"Frais de dossier : {'RÉGLÉS' if vet.frais_de_dossier_payes else 'NON RÉGLÉS'}")
+            y -= 0.5*cm
+            p.drawString(2.5*cm, y, f"Redevance Annuelle : {'RÉGLÉE' if vet.redevance_payee else 'NON RÉGLÉE'}")
 
             # Pied de page
             p.setFont("Helvetica-Oblique", 9)
@@ -133,15 +156,11 @@ from datetime import timedelta
 import csv
 
 
-class AdminRequiredMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.request.user.is_superuser
-
-    def handle_no_permission(self):
-        return HttpResponseForbidden("Vous n'avez pas les droits d'administration nécessaires.")
 
 
-class ExportVETPDFListView(LoginRequiredMixin, AdminRequiredMixin, View):
+
+class ExportVETPDFListView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'vet.view_vet'
     """Export de la liste filtrée des VET au format PDF"""
     def get(self, request, *args, **kwargs):
         # Récupération des filtres (même logique que CSV)
@@ -217,7 +236,8 @@ class ExportVETPDFListView(LoginRequiredMixin, AdminRequiredMixin, View):
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 
-class ExportVETExcelListView(LoginRequiredMixin, AdminRequiredMixin, View):
+class ExportVETExcelListView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'vet.view_vet'
     """Export des données VET au format Excel (.xlsx)"""
     def get(self, request, *args, **kwargs):
         now = timezone.now()
@@ -341,7 +361,8 @@ class ExportVETExcelDetailView(LoginRequiredMixin, View):
         return response
 
 
-class ExportVETCSVView(LoginRequiredMixin, AdminRequiredMixin, View):
+class ExportVETCSVView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'vet.view_vet'
     """Export des données VET au format CSV (format universel)"""
     def get(self, request, *args, **kwargs):
         # Récupération des filtres (même logique que HomeView)
@@ -455,7 +476,8 @@ class VETDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class VETCreateView(LoginRequiredMixin, CreateView):
+class VETCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    permission_required = 'vet.add_vet'
     model = VET
     form_class = VETForm
     template_name = "vet/vet_form.html"
@@ -495,7 +517,8 @@ class VETCreateView(LoginRequiredMixin, CreateView):
             return self.render_to_response(self.get_context_data(form=form))
 
 
-class VETUpdateView(LoginRequiredMixin, UpdateView):
+class VETUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    permission_required = 'vet.change_vet'
     model = VET
     form_class = VETForm
     template_name = "vet/vet_form.html"
@@ -535,7 +558,8 @@ class VETUpdateView(LoginRequiredMixin, UpdateView):
             return self.render_to_response(self.get_context_data(form=form))
 
 
-class VETDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
+class VETDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = 'vet.delete_vet'
     model = VET
     template_name = "vet/vet_confirm_delete.html"
     success_url = reverse_lazy("vet:vet_list")
@@ -585,10 +609,17 @@ class HomeView(LoginRequiredMixin, TemplateView):
         # Retards de paiement (basé sur la date d'expiration)
         en_retard = qs.filter(date_d_expiration_de_la_redevance_annuelle__lt=now.date(), statut='actif').count()
 
+        # KPI de Conformité (Nouveau)
+        # Un établissement est considéré "En Règle" s'il a sa facture ET son autorisation présente
+        en_regle = qs.filter(presence_facture=True, presence_autorisation=True).count()
+        taux_conformite = round((en_regle / ctx["total_vet"] * 100), 1) if ctx["total_vet"] > 0 else 0
+
         ctx["total_redevance"] = total_redevance
         ctx["total_a_recouvrer"] = total_a_recouvrer
         ctx["taux_recouvrement"] = round((collectes / total_a_recouvrer * 100), 1) if total_a_recouvrer > 0 else 0
         ctx["en_retard"] = en_retard
+        ctx["en_regle"] = en_regle
+        ctx["taux_conformite"] = taux_conformite
 
         # Comparaisons par région (Top 5)
         # ✅ OPTIMISATION #1: Charger UNE FOIS en Python au lieu de N requêtes
@@ -668,28 +699,29 @@ class HomeView(LoginRequiredMixin, TemplateView):
             "frais_dus": qs.filter(frais_de_dossier_payes=False).count(),
         }
 
-        # --- Stats des ENTITÉS (Distributeurs, Réseaux, Cybercafés) ---
-        ctx["total_entites"] = Entite.objects.count()
+        # --- Stats des ACTIVITÉS (Distributeurs, Réseaux, Cybercafés) ---
+        ctx["total_activites"] = Activite.objects.count()
 
-        # Grouper par type d'entité
-        entites_par_type = Entite.objects.values('type_entite__nom').annotate(
+        # Statistiques des Activités (Top 5 types)
+        activites_par_type = Activite.objects.values('type_activite__nom').annotate(
             count=Count('id'),
-            total_redevance=Sum('frais_exploitation_annuel')
-        ).order_by('-count')
-        ctx["entites_par_type"] = entites_par_type
+            total=Sum('frais_exploitation_annuel')
+        ).order_by('-total')[:5]
+        ctx["activites_par_type"] = activites_par_type
 
-        # Dernières entités pour affichage
-        ctx["latest_entites"] = Entite.objects.select_related('type_entite').order_by('-created_at')[:5]
+        # Dernières activités ajoutées
+        ctx["latest_activites"] = Activite.objects.select_related('type_activite').order_by('-created_at')[:5]
 
-        # Total des redevances entités
-        ctx["total_redevance_entites"] = Entite.objects.aggregate(
+        # Total des redevances activités
+        ctx["total_redevance_activites"] = Activite.objects.aggregate(
             total=Sum('frais_exploitation_annuel')
         )['total'] or Decimal('0.00')
 
         return ctx
 
 
-class VETMapView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
+class VETMapView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = 'vet.view_vet'
     """Carte interactive avec données GPS (admin seulement)"""
     template_name = "vet/vet_maps.html"
 

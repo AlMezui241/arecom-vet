@@ -1,0 +1,442 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        Modifier - {{ form.instance.numero }}
+    {% else %}
+        Ajouter une nouvelle activité
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1>
+                {% if form.instance.pk %}
+                    Modifier une activité - {{ form.instance.numero }}
+                {% else %}
+                    Ajouter une nouvelle activité
+                {% endif %}
+            </h1>
+
+            <form method="post" enctype="multipart/form-data" class="mt-4">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Identité</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Type d'activité *</label>
+                            {{ form.type_activite|add_class:"form-select" }}
+                            {% if form.type_activite.errors %}
+                                <div class="alert alert-danger mt-2">{{ form.type_activite.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">Choisissez la catégorie (Distributeur, Réseau privé, Cybercafé, etc.).</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Numéro *</label>
+                            {{ form.numero|add_class:"form-control" }}
+                            {% if form.numero.errors %}
+                                <div class="alert alert-danger mt-2">{{ form.numero.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nom / Raison Sociale *</label>
+                            {{ form.nom_activite|add_class:"form-control" }}
+                            {% if form.nom_activite.errors %}
+                                <div class="alert alert-danger mt-2">{{ form.nom_activite.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Localisation</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Province *</label>
+                                {{ form.province|add_class:"form-control" }}
+                                {% if form.province.errors %}
+                                    <div class="text-danger small mt-1">{{ form.province.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Localité *</label>
+                                {{ form.localite|add_class:"form-control" }}
+                                {% if form.localite.errors %}
+                                    <div class="text-danger small mt-1">{{ form.localite.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Quartier/Zone *</label>
+                            {{ form.quartier_zone|add_class:"form-control" }}
+                            {% if form.quartier_zone.errors %}
+                                <div class="text-danger small mt-1">{{ form.quartier_zone.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Coordonnées</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Téléphone</label>
+                                {{ form.telephone|add_class:"form-control" }}
+                                {% if form.telephone.errors %}
+                                    <div class="text-danger small mt-1">{{ form.telephone.errors|first }}</div>
+                                {% endif %}
+                                <div class="form-text">Format accepté : +243123456789 ou (243) 123-456789.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email</label>
+                                {{ form.email|add_class:"form-control" }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger small mt-1">{{ form.email.errors|first }}</div>
+                                {% endif %}
+                                <div class="form-text">Adresse email de contact de l'entité (optionnelle).</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">GPS</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Latitude</label>
+                                <div class="input-group">
+                                    {{ form.latitude|add_class:"form-control" }}
+                                    <button type="button" class="btn btn-outline-primary" id="btn-locate-activite">
+                                        <i class="bi bi-geo-alt"></i> Me localiser
+                                    </button>
+                                </div>
+                                {% if form.latitude.errors %}
+                                    <div class="text-danger small mt-1">{{ form.latitude.errors|first }}</div>
+                                {% endif %}
+                                <div class="form-text">Cliquez sur “Me localiser” pour remplir automatiquement les coordonnées.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Longitude</label>
+                                {{ form.longitude|add_class:"form-control" }}
+                                {% if form.longitude.errors %}
+                                    <div class="text-danger small mt-1">{{ form.longitude.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Précision GPS</label>
+                            {{ form.precision_gps|add_class:"form-control" }}
+                            <div class="form-text">Indiquez la précision ou la source de la position (ex : GPS smartphone).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Conformité de terrain</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.presence_facture|add_class:"form-check-input" }}
+                                    <label class="form-check-label">Facture présente</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.presence_autorisation|add_class:"form-check-input" }}
+                                    <label class="form-check-label">Autorisation présente</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.presence_homologation|add_class:"form-check-input" }}
+                                    <label class="form-check-label">Homologation présente</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Frais d'instruction (FCFA)</label>
+                                {{ form.frais_instruction_dossier|add_class:"form-control" }}
+                                {% if form.frais_instruction_dossier.errors %}
+                                    <div class="text-danger small mt-1">{{ form.frais_instruction_dossier.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Frais exploitation annuel (FCFA)</label>
+                                {{ form.frais_exploitation_annuel|add_class:"form-control" }}
+                                {% if form.frais_exploitation_annuel.errors %}
+                                    <div class="text-danger small mt-1">{{ form.frais_exploitation_annuel.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Contribution fonds universel (FCFA)</label>
+                            {{ form.contribution_fonds_universel|add_class:"form-control" }}
+                            {% if form.contribution_fonds_universel.errors %}
+                                <div class="text-danger small mt-1">{{ form.contribution_fonds_universel.errors|first }}</div>
+                            {% endif %}
+                            <div class="form-text">Montants annuels liés à l'exploitation et aux obligations de service universel.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents attachés -->
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Documents (autorisations, scans, etc.)</h5>
+                        <small class="text-white-50">Joignez les pièces justificatives liées à cette entité.</small>
+                    </div>
+                    <div class="card-body">
+                        {{ documents.management_form }}
+                        <div id="documents-formset" class="row g-3">
+                            {% for d_form in documents %}
+                            <div class="col-12 border-bottom pb-3 mb-3 document-row">
+                                {% for hidden in d_form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                                <div class="row g-2">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label small">Fichier</label>
+                                        {{ d_form.fichier|add_class:"form-control" }}
+                                        {% if d_form.fichier.errors %}
+                                            <div class="text-danger small mt-1">{{ d_form.fichier.errors|first }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label small">Type</label>
+                                        {{ d_form.type_document|add_class:"form-select" }}
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label small">Description</label>
+                                        {{ d_form.description|add_class:"form-control" }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="add-activite-document">
+                            <i class="bi bi-plus-circle me-1"></i> Ajouter un document
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Autorisation</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Statut</label>
+                            {{ form.statut_autorisation|add_class:"form-select" }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Contrepartie financière (FCFA)</label>
+                            {{ form.contrepartie_financiere|add_class:"form-control" }}
+                            {% if form.contrepartie_financiere.errors %}
+                                <div class="text-danger small mt-1">{{ form.contrepartie_financiere.errors|first }}</div>
+                            {% endif %}
+                            <div class="form-text">Montant constant fixé par l'autorité pour ce type d'autorisation.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Observations</h5>
+                    </div>
+                    <div class="card-body">
+                        {{ form.observation|add_class:"form-control"|attr:"rows:5" }}
+                    </div>
+                </div>
+                <div class="card mt-3">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Statut global de l'entité</h5>
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <label class="form-label">Statut *</label>
+            {{ form.statut|add_class:"form-select" }}
+            {% if form.statut.errors %}
+                <div class="text-danger small mt-1">{{ form.statut.errors|first }}</div>
+            {% endif %}
+            <div class="form-text">Statut actuel de l'entité (par défaut : Actif)</div>
+        </div>
+    </div>
+</div>
+
+                <!-- Erreurs globales -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger mt-3">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <!-- Boutons -->
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        {% if form.instance.pk %}
+                            Enregistrer les modifications
+                        {% else %}
+                            Créer l'entité
+                        {% endif %}
+                    </button>
+                    <a href="{% url 'activites:list' %}" class="btn btn-secondary btn-lg">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ────────────────────────────────────────────────
+// Géolocalisation - version robuste et explicative
+// ────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('btn-locate-activite');
+    if (!btn) {
+        console.warn("Bouton de géolocalisation non trouvé (#btn-locate-activite)");
+        return;
+    }
+
+    btn.addEventListener('click', function () {
+        console.log("Bouton géolocalisation cliqué");
+
+        if (!navigator.geolocation) {
+            alert("La géolocalisation n'est pas supportée par votre navigateur.");
+            console.error("Geolocation API non disponible");
+            return;
+        }
+
+        const originalHtml = this.innerHTML;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Recherche...';
+        this.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                console.log("Position obtenue avec succès", position.coords);
+
+                // Recherche par name → beaucoup plus fiable que id_for_label
+                const latInput = document.querySelector('input[name="latitude"]');
+                const lonInput = document.querySelector('input[name="longitude"]');
+
+                if (latInput && lonInput) {
+                    latInput.value = position.coords.latitude.toFixed(6);
+                    lonInput.value = position.coords.longitude.toFixed(6);
+
+                    // Feedback visuel positif
+                    this.innerHTML = '<i class="bi bi-check-lg"></i> Position obtenue';
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-success');
+                } else {
+                    alert("Les champs latitude et/ou longitude n'ont pas été trouvés dans le formulaire.");
+                    console.error("Champs latitude/longitude introuvables via name=");
+                    this.innerHTML = originalHtml;
+                }
+
+                this.disabled = false;
+            },
+
+            (error) => {
+                let message = "Erreur inconnue lors de la récupération de la position.";
+
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        message = "Géolocalisation refusée.\n\nVous devez autoriser l'accès à votre position dans les paramètres du navigateur.";
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        message = "Position indisponible (problème GPS ou réseau).";
+                        break;
+                    case error.TIMEOUT:
+                        message = "Délai dépassé. Veuillez réessayer.";
+                        break;
+                    default:
+                        message = "Erreur inattendue : " + error.message;
+                }
+
+                alert("Impossible de récupérer votre position :\n" + message + "\n\nVérifiez les permissions de localisation dans votre navigateur.");
+                console.error("Erreur geolocation :", error.code, error.message);
+
+                this.innerHTML = originalHtml;
+                this.disabled = false;
+            },
+
+            {
+                enableHighAccuracy: true,   // demande une meilleure précision
+                timeout: 15000,             // 15 secondes max
+                maximumAge: 0               // pas de cache → position fraîche
+            }
+        );
+    });
+});
+
+// ────────────────────────────────────────────────
+// Gestion dynamique du formset Documents (inchangé)
+// ────────────────────────────────────────────────
+(function() {
+    const addBtn = document.getElementById('add-activite-document');
+    if (!addBtn) return;
+
+    addBtn.addEventListener('click', function () {
+        const container = document.getElementById('documents-formset');
+        const totalFormsInput = document.getElementById('id_activitedocument_set-TOTAL_FORMS') ||
+                                document.querySelector('input[name$="TOTAL_FORMS"]');
+        if (!container || !totalFormsInput) return;
+
+        const totalForms = parseInt(totalFormsInput.value);
+        const rows = container.querySelectorAll('.document-row');
+        if (!rows.length) return;
+
+        const newRow = rows[0].cloneNode(true);
+        const regex = new RegExp(`(activitedocument_set-)(\\d+)(-)`, 'g');
+        newRow.innerHTML = newRow.innerHTML.replace(regex, `$1${totalForms}$3`);
+
+        newRow.querySelectorAll('input, select, textarea').forEach(input => {
+            if (input.type !== 'hidden') {
+                input.value = '';
+                if (input.type === 'checkbox') input.checked = false;
+            }
+        });
+
+        container.appendChild(newRow);
+        totalFormsInput.value = totalForms + 1;
+    });
+})();
+</script>
+{% endblock %}

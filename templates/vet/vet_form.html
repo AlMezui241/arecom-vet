@@ -59,6 +59,21 @@
 
     setupFormset('add-vignette', 'vignettes-formset', 'id_vignettes_assignees-TOTAL_FORMS', 'vignette-row', 'vignettes_assignees');
     setupFormset('add-document', 'documents-formset', 'id_documents-TOTAL_FORMS', 'document-row', 'documents');
+
+    // Toggle warning for vignettes
+    const possedeVignettesToggle = document.getElementById('id_possede_vignettes');
+    const vignettesWarning = document.getElementById('vignettes-warning');
+    
+    function toggleVignettesWarning() {
+        if (!possedeVignettesToggle.checked) {
+            vignettesWarning.classList.remove('d-none');
+        } else {
+            vignettesWarning.classList.add('d-none');
+        }
+    }
+    
+    possedeVignettesToggle.addEventListener('change', toggleVignettesWarning);
+    toggleVignettesWarning(); // Initial state
 </script>
 {% endblock %}
 
@@ -114,6 +129,44 @@
                                     <label for="{{ form.statut.id_for_label }}" class="form-label fw-medium small">Statut</label>
                                     {% render_field form.statut class+="form-select" %}
                                     <div class="invalid-feedback">{{ form.statut.errors|first }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section: Conformité & Documents de terrain -->
+                        <div class="mb-4 mb-md-5">
+                            <h5 class="text-primary border-bottom pb-2 mb-3 fw-bold small text-uppercase"><i class="bi bi-shield-check me-2"></i>Conformité & Documents de terrain</h5>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <div class="card bg-light border-0 p-3 h-100">
+                                        <label class="form-label fw-bold text-muted x-small text-uppercase mb-3">Statut des Vignettes</label>
+                                        <div class="form-check form-switch mb-2">
+                                            {% render_field form.possede_vignettes class+="form-check-input" role="switch" id="id_possede_vignettes" %}
+                                            <label class="form-check-label fw-medium" for="id_possede_vignettes">Vignettes déjà présentes sur site ?</label>
+                                        </div>
+                                        <div id="vignettes-warning" class="alert alert-warning small p-2 mt-2 d-none">
+                                            <i class="bi bi-info-circle-fill me-1"></i> Si non, veuillez recenser les équipements ci-dessous pour générer le besoin.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="card bg-light border-0 p-3 h-100">
+                                        <label class="form-label fw-bold text-muted x-small text-uppercase mb-3">Documents de Conformité</label>
+                                        <div class="d-flex flex-column gap-2">
+                                            <div class="form-check">
+                                                {% render_field form.presence_facture class+="form-check-input" id="id_presence_facture" %}
+                                                <label class="form-check-label small" for="id_presence_facture">Facture d'achat présente</label>
+                                            </div>
+                                            <div class="form-check">
+                                                {% render_field form.presence_autorisation class+="form-check-input" id="id_presence_autorisation" %}
+                                                <label class="form-check-label small" for="id_presence_autorisation">Autorisation présente</label>
+                                            </div>
+                                            <div class="form-check">
+                                                {% render_field form.presence_homologation class+="form-check-input" id="id_presence_homologation" %}
+                                                <label class="form-check-label small" for="id_presence_homologation">Homologation présente</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

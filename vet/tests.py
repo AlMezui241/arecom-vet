@@ -20,6 +20,7 @@ class VETModelTests(TestCase):
             region="Estuaire",
             zone="Libreville",
             quartier="Akanda",
+            possede_vignettes=False,  # ✅ Pour que le stock soit déduit lors des tests
             montant_de_la_redevance_annuelle=Decimal("100000.00"),
             date_d_emission_de_la_redevance_annuelle=timezone.now().date(),
             date_d_expiration_de_la_redevance_annuelle=timezone.now().date() + timedelta(days=365)

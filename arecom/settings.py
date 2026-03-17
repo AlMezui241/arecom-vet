@@ -28,7 +28,7 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'False'
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-0&4(%-wx7)%qaxd^_a=ez_+!h+^j3s#2tjt5^23mqy8+)#0$t&')
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '192.168.4.149,localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '192.168.4.149,localhost,127.0.0.1, arecom-vet.onrender.com').split(',')
 
 
 # Application definition

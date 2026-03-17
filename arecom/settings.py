@@ -14,6 +14,7 @@ import os
 import dj_database_url
 from pathlib import Path
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -80,13 +81,20 @@ WSGI_APPLICATION = 'arecom.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
+
+if "DATABASE_URL" in os.environ:
+    DATABASES["default"] = dj_database_url.config(
         conn_max_age=600,
         conn_health_checks=True,
-    )
-}
+)
 
 
 # Password validation

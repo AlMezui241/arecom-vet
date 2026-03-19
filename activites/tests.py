@@ -67,7 +67,7 @@ class ActiviteModelTest(TestCase):
         self.assertEqual(activite.montant_total_redevance, Decimal('6000'))
 
     def test_est_en_cours(self):
-        # Les dates d'autorisation ont été supprimées, on utilise le statut
+        # Les dates d'autorisation ont été supprimées, on s'appuie sur les statuts.
         activite_en_cours = Activite.objects.create(
             type_activite=self.type_activite,
             numero='TEST-005',
@@ -78,7 +78,7 @@ class ActiviteModelTest(TestCase):
             statut='actif',
             created_by=self.user
         )
-        # self.assertTrue(activite_en_cours.est_en_cours) # est_en_cours a été supprimé ou doit être basé sur statut
+        self.assertTrue(activite_en_cours.est_en_cours)
 
         activite_expiree = Activite.objects.create(
             type_activite=self.type_activite,
@@ -90,4 +90,17 @@ class ActiviteModelTest(TestCase):
             statut='termine',
             created_by=self.user
         )
-        # self.assertFalse(activite_expiree.est_en_cours)
+        self.assertFalse(activite_expiree.est_en_cours)
+
+        activite_suspendue = Activite.objects.create(
+            type_activite=self.type_activite,
+            numero='TEST-007',
+            nom_activite='Test Activite 7',
+            province='Test Province',
+            localite='Test Localite',
+            quartier_zone='Test Zone',
+            statut='actif',
+            statut_autorisation='suspendue',
+            created_by=self.user
+        )
+        self.assertFalse(activite_suspendue.est_en_cours)

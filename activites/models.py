@@ -214,11 +214,11 @@ class Activite(models.Model):
 
     @property
     def est_en_cours(self):
-        """Vérifier si l'autorisation est valide en se basant sur sa date de fin."""
-        from django.utils import timezone
-        if self.date_fin_autorisation:
-            return self.date_fin_autorisation >= timezone.now().date()
-        return True
+        """Indique si l'activité est toujours active selon son statut."""
+        return (
+            self.statut == 'actif'
+            and self.statut_autorisation not in {'suspendue', 'terminee'}
+        )
 
 
 class ActiviteDocument(models.Model):

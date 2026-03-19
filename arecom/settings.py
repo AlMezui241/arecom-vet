@@ -30,6 +30,10 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-0&4(%-wx7)%qaxd^_a=ez
 
 
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "192.168.4.149,localhost,127.0.0.1,arecom-vet.onrender.com",).split(",")
+<<<<<<< HEAD
+=======
+
+>>>>>>> 33ae2f4aef255482f6927d4ecb915e3a4139138c
 
 
 # Application definition
